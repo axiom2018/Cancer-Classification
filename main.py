@@ -18,7 +18,7 @@ da = DataAnalysis(df)
 
 
 # --- Feature engineering performs operations on features to increase performance. Vital step.
-fe = FeatureEngineering(df, True)
+fe = FeatureEngineering(df)
 fe.EncodeCategoricalColumns()
 fe.UpdateFeaturesForCorrelation()
 
@@ -27,9 +27,10 @@ fe.UpdateFeaturesForCorrelation()
 mt = ModelTraining(df)
 x_train, x_test, y_train, y_test = mt.GetTrainAndTestSets()
 x_train, x_test = fe.UseScaling(x_train, x_test)
-mt.Train(x_train, y_train, True)
+mt.Train(x_train, y_train)
 mt.AdaBoostModel()
 mt.XgBoostModel()
+mt.GradientBoost()
 
 
 # --- Use for accuracy and what not.

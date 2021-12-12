@@ -174,11 +174,13 @@ class EvaluateModels:
         dtFalsePosRate, dtTruePosRate, dtThreshold = roc_curve(self.m_yTest, probs[1])
         rfFalsePosRate, rfTruePosRate, rfThreshold = roc_curve(self.m_yTest, probs[2])
         adaFalsePosRate, adaTruePosRate, adaThreshold = roc_curve(self.m_yTest, probs[3])
+        gbFalsePosRate, gbTruePosRate, gbThreshold = roc_curve(self.m_yTest, probs[4])
 
         plt.plot(lrFalsePosRate, lrTruePosRate, linestyle='--', label="Logistic Regression (AUROC = %0.3f)" % aucScores[0])
         plt.plot(dtFalsePosRate, dtTruePosRate, linestyle='--', label="Decision Tree (AUROC = %0.3f)" % aucScores[1])
         plt.plot(rfFalsePosRate, rfTruePosRate, linestyle='--', label="Random Forest (AUROC = %0.3f)" % aucScores[2])
         plt.plot(adaFalsePosRate, adaTruePosRate, linestyle='--', label="Adaboost Model (AUROC = %0.3f)" % aucScores[3])
+        plt.plot(gbFalsePosRate, gbTruePosRate, linestyle='solid', label="Gradient Boost (AUROC = %0.3f)" % aucScores[4])
 
         plt.title("LR roc plot")
         plt.xlabel("False positives")

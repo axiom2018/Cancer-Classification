@@ -1,12 +1,11 @@
-from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.preprocessing import StandardScaler
-import numpy as np
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import classification_report
 import xgboost as xgb
 
 
@@ -159,6 +158,26 @@ class ModelTraining:
 
         # Turn the model into a tuple with its name and then add it to the list of models
         self.m_models.append(('Adaboost', adaModel))
+
+    
+    ''' Gradient boost model. Very simple to use and set up, especially with the classifier. Just
+        like Xgboost model, choosing the correct argument values. 
+        
+        After some studying, the most common ones to use are:
+        
+        1) Criterion - Loss function to get the proper threshold.
+        
+        2) learning_rate - Alters the contribution of each tree.
+        
+        3) max_depth - The max depth of each tree.
+        
+        4) n_estimators - # of trees to MAKE. Default 100. 
+        
+         '''
+    def GradientBoost(self):
+        gb = GradientBoostingClassifier()
+        gb.fit(self.m_xTrain, self.m_yTrain)
+        self.m_models.append(('Gradient Boost', gb))
 
 
     # For evaluate models class.
