@@ -92,7 +92,7 @@ class FeatureEngineering:
 
         # Also drop the id column, it doesn't have any use.
         self.m_df.drop('id', inplace=True, axis=1)
-        print('---Updating dataset for more correlated features done.---')
+        print('---Updating dataset for more correlated features done.---\n')
     
 
     ''' 4) Scaling

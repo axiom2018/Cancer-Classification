@@ -14,7 +14,7 @@ df = pd.read_csv('wisc_bc_data.csv')
 
 
 # --- Data analysis just involves exploring the data for what is has. See data_analysis.py for explanation for last 3 default arguments.
-da = DataAnalysis(df, True, True)
+da = DataAnalysis(df)
 
 
 # --- Feature engineering performs operations on features to increase performance. Vital step.
@@ -28,9 +28,15 @@ mt = ModelTraining(df)
 x_train, x_test, y_train, y_test = mt.GetTrainAndTestSets()
 x_train, x_test = fe.UseScaling(x_train, x_test)
 mt.Train(x_train, y_train, True)
+mt.AdaBoostModel()
+mt.XgBoostModel()
 
 
 # --- Use for accuracy and what not.
 em = EvaluateModels(mt.GetModels(), x_test, y_test)
 em.ViewClassificationReport()
 em.ViewAccuracy()
+em.ViewConfusionMatrices()
+em.CustomModelMetrics()
+em.PlotRocCurves()
+em.ApplyRegularization(x_train, y_train)
