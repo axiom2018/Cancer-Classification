@@ -163,11 +163,66 @@ class DataAnalysis:
         between 2 variables. This is definitely used in the world of business to see if one
         thing influences another in any manner at all. A quick example might be if a company
         has used a popular mascot in commercials, and they see a sharp increase in sales, then
-        that MIGHT indicate a positive correlation between the 2. '''
-    def Correlation(self, seeCorrelationHeatMap=False):
+        that MIGHT indicate a positive correlation between the 2.
+        
+        Threshold - Depending on if the correlation values are great enough, show the value. 
+            MUST be inbetween 0 and 1 as a float value.
+            
+        seeCurrentColumnRows - The first column/feature in this dataset is radius_mean so
+            it's possible, as shown in the code, to get that particular column and of course
+            the rows which are radius_mean, texture_mean, etc. This value being true means
+            regardless of the threshold just display them, so later the algorithm will
+            pick out ones according TO the threshold for real side by side comparison. 
+            
+        seeCorrelationHeatMap - Self explanatory. '''
+    def Correlation(self, threshold=0.5, seeCurrentColumnRows=False, seeCorrelationHeatMap=False):
         # Only use a few columns for the correlation.
         corrMatrix = self.m_df.iloc[:, 1:9].corr()
-        print(corrMatrix)
+
+        # Get column names for comparisons.
+        columnNames = corrMatrix.columns.tolist()
+
+        # Loop through each portion of the dataset via column name and filter the info.
+        for name in columnNames:
+            ''' Get a portion of the matrix that is the column/feature. For example, accessing
+                the radius_mean column will look like:
+
+                                  radius_mean
+                radius_mean          1.000000
+                texture_mean         0.323782
+                perimeter_mean       0.997855
+                area_mean            0.987357
+                smoothness_mean      0.170581
+                compactness_mean     0.506124
+                concavity_mean       0.676764 
+                
+                In this case, the name parameter below will be radius_mean, and therefore it will
+                be simple to access all the rows to see radius_mean correlates with others. '''
+            curDf = corrMatrix[name].to_frame()
+
+            if seeCurrentColumnRows is True:
+                print(f'---{name}--- column:\n{curDf}')
+                print('\n')
+
+            ''' Now just do what was mentioned in the previous comment, go through each row
+                of a particular column/feature and check the correlation value.
+                
+                The first line in the for loop gets the numerical value of correlation. 
+
+                The second checks the value with the threshold value, if it matches or exceeds 
+                the threshold, that's only the first half. The next goal is to make sure the
+                row name doesn't match the column name. It's obvious the same row name and column
+                name correlate by a value of 1.0 all the time so skip that. Then of course save 
+                the sentence of information to the list if these criteria are met. '''
+
+            for nameOfRow in columnNames:
+                val = round(curDf.loc[nameOfRow][0], 3)
+
+                if val >= threshold and nameOfRow != name:
+                    print(f'{name} correlation with {nameOfRow} = {val}')
+
+            print('\n')
+
 
         if seeCorrelationHeatMap is True:
             self.HeatMap()

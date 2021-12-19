@@ -25,6 +25,7 @@ da = DataAnalysis(df)
 # da.HeatMap()
 da.Correlation()
 
+
 # t = ['hi', 5, 'd']
 
 # while t:
