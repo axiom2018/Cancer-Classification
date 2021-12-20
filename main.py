@@ -3,7 +3,7 @@ from data_analysis import DataAnalysis
 from feature_engineering import FeatureEngineering
 from model_training import ModelTraining
 from evaluate_models import EvaluateModels
-import numpy as np
+from data_cleaning_and_validation import DataCleaningAndValidation
 
 
 ''' 
@@ -23,16 +23,12 @@ da = DataAnalysis(df)
 # da.CalculatePDF()
 # da.CalculateCDF()
 # da.HeatMap()
-da.Correlation()
+# da.Correlation()
 
-
-# t = ['hi', 5, 'd']
-
-# while t:
-#     print(t[0])
-#     t.pop(0)
-
-
+dcav = DataCleaningAndValidation(df)
+# dcav.IdentifyOutliersWithBoxPlot('radius_mean')
+# dcav.HandleMissingValues()
+dcav.RemoveOutliers('radius_mean')
 
 
 

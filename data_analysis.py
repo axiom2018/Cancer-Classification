@@ -41,9 +41,6 @@ class DataAnalysis:
         # View all column names dataset has.
         print(f'---Column names---: {self.m_df.columns}\n')
 
-        # Find empty values if any exist. If so, using dropna may be necessary. 
-        print(f'---Are there missing entries in the data?---:\n{self.m_df.isna().any()}')
-
         ''' See the types of data, but more importantly see any missing values from 
             the total amount of rows in every column. Very important to see because
             if any do occur, things must be done. '''
