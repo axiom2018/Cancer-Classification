@@ -25,10 +25,14 @@ da = DataAnalysis(df)
 # da.HeatMap()
 # da.Correlation()
 
+
+
 dcav = DataCleaningAndValidation(df)
 # dcav.IdentifyOutliersWithBoxPlot('radius_mean')
 # dcav.HandleMissingValues()
-dcav.RemoveOutliers('radius_mean')
+# Provide function with numerical columns from the dataset. For example, NOT "id" & "diagnosis". 
+# dcav.RemoveOutliers('texture_se') 
+
 
 
 
