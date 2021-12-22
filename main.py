@@ -4,7 +4,7 @@ from feature_engineering import FeatureEngineering
 from model_training import ModelTraining
 from evaluate_models import EvaluateModels
 from data_cleaning_and_validation import DataCleaningAndValidation
-
+import numpy as np
 
 ''' 
 
@@ -14,6 +14,20 @@ from data_cleaning_and_validation import DataCleaningAndValidation
 
 
 df = pd.read_csv('wisc_bc_data.csv')
+# df = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
+# print('---After loading.---\n')
+# print(df.head())
+# print(df.info())
+# print('\n')
+
+# print('---Editing dataframe---\n')
+# df = df.replace('?', np.nan)
+# #df['cabin'] = df['cabin'].astype(str).str[0]
+# df['pclass'] = df['pclass'].astype('O')
+# df['embarked'].fillna('C', inplace=True)
+
+# print(df.head())
+# print(df.info())
 
 
 # --- Data analysis just involves exploring the data for what is has. See data_analysis.py for explanation for last 3 default arguments.
@@ -26,7 +40,7 @@ da = DataAnalysis(df)
 # da.Correlation()
 
 
-
+# --- Cleaning and validating data sets are a normal process for a variety of reasons mentioned in the .py file.
 dcav = DataCleaningAndValidation(df)
 # dcav.IdentifyOutliersWithBoxPlot('radius_mean')
 # dcav.HandleMissingValues()
@@ -37,8 +51,11 @@ dcav = DataCleaningAndValidation(df)
 
 
 
-# # --- Feature engineering performs operations on features to increase performance. Vital step.
-# fe = FeatureEngineering(df)
+# --- Feature engineering performs operations on features to increase performance. Vital step.
+fe = FeatureEngineering(df)
+fe.MeanEncoding()
+# fe.ShowHeatMap()
+# fe.Correlation()
 # fe.EncodeCategoricalColumns()
 # fe.UpdateFeaturesForCorrelation()
 
