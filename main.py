@@ -14,20 +14,6 @@ import numpy as np
 
 
 df = pd.read_csv('wisc_bc_data.csv')
-# df = pd.read_csv('https://www.openml.org/data/get_csv/16826755/phpMYEkMl')
-# print('---After loading.---\n')
-# print(df.head())
-# print(df.info())
-# print('\n')
-
-# print('---Editing dataframe---\n')
-# df = df.replace('?', np.nan)
-# #df['cabin'] = df['cabin'].astype(str).str[0]
-# df['pclass'] = df['pclass'].astype('O')
-# df['embarked'].fillna('C', inplace=True)
-
-# print(df.head())
-# print(df.info())
 
 
 # --- Data analysis just involves exploring the data for what is has. See data_analysis.py for explanation for last 3 default arguments.
@@ -54,6 +40,7 @@ dcav = DataCleaningAndValidation(df)
 # --- Feature engineering performs operations on features to increase performance. Vital step.
 fe = FeatureEngineering(df)
 fe.MeanEncoding()
+fe.Correlation()
 # fe.ShowHeatMap()
 # fe.Correlation()
 # fe.EncodeCategoricalColumns()

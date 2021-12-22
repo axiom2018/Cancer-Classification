@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from numpy.core.fromnumeric import var
 from pandas.core.indexes import category
 from scipy.sparse import data
 import seaborn as sns
@@ -29,67 +30,46 @@ class FeatureEngineering:
         It tends to be random, as in no correlation with the target variable. Mean encoding 
         however uses the target variable as the basis to make the new encoded feature. Its
         only slight drawback is potentially overfitting but that will be resolved soon. '''
-    def MeanEncoding(self):
+    def MeanEncoding(self, showSteps=False):
+        print('---Begin mean encoding.---')
         # Change boolean when testing to see head side by side with the result for comparison.
         seeDfHead = False
 
         if seeDfHead is True:
             print(self.m_df.head())
 
-        print('Group by:')
-        print(self.m_df.groupby(['diagnosis'])['radius_mean'].count())
+        if showSteps is True:
+            print('Group by:')
+            print(self.m_df.groupby(['diagnosis'])['radius_mean'].count())
 
-        print('\nMean:')
-        print(self.m_df.groupby(['diagnosis'])['radius_mean'].mean())
+            print('\nMean:')
+            print(self.m_df.groupby(['diagnosis'])['radius_mean'].mean())
 
-        print('\nMean Encoded:')
+            print('\nMean Encoded:')
+
         me = self.m_df.groupby(['diagnosis'])['radius_mean'].mean().to_dict()
         self.m_df['diagnosis'] = self.m_df['diagnosis'].map(me)
-        print(self.m_df)
+
+        if showSteps is True:
+            print(self.m_df)
+
+        print('---Mean encoding finished.---\n')
 
 
 
-        ''' Error with the following code.
-        
-            Explanation: Following the library tutorial found here: 
-            https://feature-engine.readthedocs.io/en/latest/encoding/MeanEncoder.html 
-            
-            The target column in the links dataset is survived. When using train_test_split,
-            it is dropped from the actual dataset to give a different dataset to the function,
-            of course the new one doesn't have target. Then the actual dataset gives the target
-            value in the next argument. So this code follows the link example well in that 
-            respect.  
+    ''' This function helps the Correlation function. It will calculate the
+        Vif scores for each column/feature in a dataframe and return the
+        results.
 
-            The links load_titanic function doesn't seem to do much. Not the replace function,
-            the astype for the 'cabin' column, the astype for the 'pclass' column, nor the fillna
-            should have anything to do with why the library won't work for THIS dataset.
-
-            Things attempted:
-
-            1) Dropping target variable 'diagnosis like link drops target variable (and more)
-                in first argument of train_test_split:
-
-                    Result error: "['diagnosis'] not found in axis"
-
-
-            2) Changing 1st arg of train_test_split from "self.m_df.drop(['diagnosis'])" to
-                self.m_df:
-
-                    Result error: "Some of the variables are not categorical. Please cast
-                    them as object or category before calling this transformer"
-
-        '''
-
-        # print('Using train test split.')
-        # x_train, x_test, y_train, y_test = train_test_split(self.m_df, 
-        #                                     self.m_df['diagnosis'], test_size=0.3, random_state=0)
-
-        # print('Creating meanencoder object.')
-        # encoder = MeanEncoder(variables=['diagnosis', 'radius_mean'])
-
-        # encoder.fit(x_train, y_train)
-
-
+        Simply create new columns in the new dataframe and in the vif_score
+        feature/column, use list comprehension to GET the proper vif score.
+        Also sort it to make it easier to see where the highest vif values are. '''
+    def CalculateVifScore(self, df):
+        vif = pd.DataFrame()
+        vif['Features'] = df.columns
+        vif['Vif_Score'] = [variance_inflation_factor(df.values, i) for i in range(self.m_df.shape[1])]
+        vif.sort_values(by=['Vif_Score'], inplace=True, ascending=False)
+        return vif
 
 
 
@@ -102,25 +82,96 @@ class FeatureEngineering:
             
         2) Vif - Variance inflation factor is a way to know which independent variables/columns
             are highly correlated in the data, so it's definitely useful. Luckily a library helps
-            with this purpose.  '''
-    def Correlation(self, showHeatMap=False):
+            with this purpose. 
+            
+            To make things simplier, get a new dataframe and just map the vif numbers to each 
+            column/feature. Every feature will have one anyway since the whole point of vif is
+            to check a particular feature and see how correlated it is with every OTHER feature.
+            
+            threshold - The amount of highly correlated features to remove. Changing it will 
+                definitely lead to a change in model performance.
+                
+            showHeatMap - Self explanatory.
+            
+            showSteps - There are a lot of steps that can be seen in the terminal to understand this
+                function. Default value is false just to avoid blowing the terminal up and 
+                getting to the point. '''
+    def Correlation(self, threshold=2, showHeatMap=False, showSteps=True):
         if showHeatMap is True:
             plt.figure(figsize=(10, 10))
             matrix = sns.heatmap(self.m_df.iloc[:, 1:9].corr(), annot=True)
             plt.show()
 
-        # ''' Create new dataframe and assign 2 columns. One will be all the column names
-        #     of the dataframe passed in as an argument to the constructor. The other
-        #     will be the VIF values themselves. Makes sense because every column/feature
-        #     has a separate VIF score. '''
-        # vDf = pd.DataFrame()
+        # Create the table of vif values and print it.
+        vdf = self.CalculateVifScore(self.m_df)
 
-        # # Make a copy of the dataframe
-        # dfCopy = self.m_df.copy()
-        # dfCopy.drop(['id', 'diagnosis'], axis=1, inplace=True)
+        if showSteps is True:
+            print(f'VIF results:\n{vdf}\n')
 
-        # # Skip the first 2 columns, id and diagnosis. Get all other independent variables.
+        ''' Get only the features column here. It will be used to get n amount of feature 
+            names according to threshold. '''
+        vdfFeatures = vdf['Features']
 
-        # vDf['Features'] = dfCopy.columns
-        # vDf['VIF_Value'] = [variance_inflation_factor(dfCopy.values, i) for i in range(dfCopy.shape[1])]
-        # print(vDf)
+        if showSteps is True:
+            print(f'Converting the vdf features to list:\n{vdfFeatures.to_list()}')
+        featuresToLookInto = vdfFeatures.to_list()[:threshold]
+
+        if showSteps is True:
+            print(f'\nThe first {threshold} values according to threshold are: {featuresToLookInto}\n')
+
+
+        ''' So based on the vif scores, what variables should be dropped and which
+            should be KEPT? The correlation matrix is good to tell. With the features 
+            look into gathered from the previous step, it's now necessary to see
+            the correlation between all of those features and the target variable 
+            'diagnosis'. For example, what's the correlation between radius_mean and
+            diagnosis? How about perimeter_mean and diagnosis? Etc. 
+            
+            Start with the below variable highestValue. It will get the most highly 
+            correlated column that correlates with the target value. '''
+        highestValue = None
+
+        for column in featuresToLookInto:
+            # Get each specific column from dataframe and get correlation value.
+            col1 = self.m_df['diagnosis']
+            col2 = self.m_df[column]
+            corrValue = round(col1.corr(col2), 5)
+
+            if showSteps is True:
+                print(f'Correlation between diagnosis and {column} is {corrValue}')
+
+            ''' f the look runs for the first time, set the first value to being the
+                highest. Otherwise make comparisons to see what value is the highest. '''
+            if highestValue is None:
+                highestValue = (column, corrValue)
+            else:
+                if corrValue > highestValue[1]:
+                    highestValue = (column, corrValue)
+                else:
+                    continue
+
+        if showSteps is True:
+            print(f'\nHighest value of them all is: {highestValue}')
+        
+        if showSteps is True:
+            print('Beginning process to remove columns.\n')
+
+        ''' To loop backwards from list, since the highest value is at the end, one way
+            of doing it is using a while loop while getting the highest index. For example
+            if the code will remove 2 columns, 2 - 1 is 1. So the highest correlated 
+            feature will be at index 1. '''
+        i = len(featuresToLookInto) - 1
+        while i >= 0:
+            if showSteps is True:
+                print(f'Removing feature/column: {featuresToLookInto[i]}.')
+            
+            # Drop the column and get the vif ratings again.
+            self.m_df = self.m_df.drop([featuresToLookInto[i]], axis=1)
+
+            # Create the new table of vif values and print it.
+            vdf = self.CalculateVifScore(self.m_df)
+
+            i -= 1
+
+        if showSteps is True:
+            print(f'-----Final VIF results table:-----\n{vdf}')
