@@ -5,6 +5,7 @@ from scipy.sparse import data
 import seaborn as sns
 import pandas as pd
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+from sklearn.preprocessing import LabelEncoder
 from feature_engine.encoding import MeanEncoder
 
 from sklearn.model_selection import train_test_split
@@ -26,34 +27,17 @@ class FeatureEngineering:
 
 
 
-    ''' Also the diagnosis column/feature should be encoded. No need for label encoding.
-        It tends to be random, as in no correlation with the target variable. Mean encoding 
-        however uses the target variable as the basis to make the new encoded feature. Its
-        only slight drawback is potentially overfitting but that will be resolved soon. '''
-    def MeanEncoding(self, showSteps=False):
-        print('---Begin mean encoding.---')
-        # Change boolean when testing to see head side by side with the result for comparison.
-        seeDfHead = False
-
-        if seeDfHead is True:
-            print(self.m_df.head())
+    # Label encoding is solely for categorical variables of course.
+    def LabelEncoding(self, showSteps=True):
+        le = LabelEncoder()
+        self.m_df['diagnosis'] = le.fit_transform(self.m_df['diagnosis'])
 
         if showSteps is True:
-            print('Group by:')
-            print(self.m_df.groupby(['diagnosis'])['radius_mean'].count())
+            print('Result of label encoding for categorical column:')
+            print(self.m_df['diagnosis'])
 
-            print('\nMean:')
-            print(self.m_df.groupby(['diagnosis'])['radius_mean'].mean())
-
-            print('\nMean Encoded:')
-
-        me = self.m_df.groupby(['diagnosis'])['radius_mean'].mean().to_dict()
-        self.m_df['diagnosis'] = self.m_df['diagnosis'].map(me)
-
-        if showSteps is True:
-            print(self.m_df)
-
-        print('---Mean encoding finished.---\n')
+            print('\nUnique values of categorical column:')
+            print(self.m_df['diagnosis'].value_counts())
 
 
 
@@ -70,7 +54,6 @@ class FeatureEngineering:
         vif['Vif_Score'] = [variance_inflation_factor(df.values, i) for i in range(self.m_df.shape[1])]
         vif.sort_values(by=['Vif_Score'], inplace=True, ascending=False)
         return vif
-
 
 
 
@@ -174,4 +157,5 @@ class FeatureEngineering:
             i -= 1
 
         if showSteps is True:
-            print(f'-----Final VIF results table:-----\n{vdf}')
+            print(f'-----Final VIF results table:-----\n{vdf}\n')
+            print(f'-----Current dataframe:-----\n{self.m_df}')

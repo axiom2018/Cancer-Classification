@@ -39,7 +39,7 @@ dcav = DataCleaningAndValidation(df)
 
 # --- Feature engineering performs operations on features to increase performance. Vital step.
 fe = FeatureEngineering(df)
-fe.MeanEncoding()
+fe.LabelEncoding(False)
 fe.Correlation()
 # fe.ShowHeatMap()
 # fe.Correlation()
