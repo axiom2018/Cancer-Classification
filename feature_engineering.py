@@ -149,7 +149,7 @@ class FeatureEngineering:
                 print(f'Removing feature/column: {featuresToLookInto[i]}.')
             
             # Drop the column and get the vif ratings again.
-            self.m_df = self.m_df.drop([featuresToLookInto[i]], axis=1)
+            self.m_df.drop([featuresToLookInto[i]], axis=1, inplace=True)
 
             # Create the new table of vif values and print it.
             vdf = self.CalculateVifScore(self.m_df)

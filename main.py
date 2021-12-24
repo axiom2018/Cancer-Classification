@@ -40,15 +40,16 @@ dcav = DataCleaningAndValidation(df)
 # --- Feature engineering performs operations on features to increase performance. Vital step.
 fe = FeatureEngineering(df)
 fe.LabelEncoding(False)
-fe.Correlation()
+fe.Correlation(2, False, False)
 # fe.ShowHeatMap()
 # fe.Correlation()
 # fe.EncodeCategoricalColumns()
 # fe.UpdateFeaturesForCorrelation()
 
 
-# # --- Model training is like letting a student study. Here a part of feature engineering is applied.  Return models as well.
-# mt = ModelTraining(df)
+# --- Model training is like letting a student study. Here a part of feature engineering is applied.  Return models as well.
+mt = ModelTraining(df)
+mt.ApplyLogisticRegression()
 # x_train, x_test, y_train, y_test = mt.GetTrainAndTestSets()
 # x_train, x_test = fe.UseScaling(x_train, x_test)
 # mt.Train(x_train, y_train)
