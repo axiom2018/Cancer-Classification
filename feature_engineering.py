@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-from numpy.core.fromnumeric import var
 import seaborn as sns
 import pandas as pd
 from statsmodels.stats.outliers_influence import variance_inflation_factor
@@ -20,6 +19,7 @@ class FeatureEngineering:
 
         # A part of feature engineering is getting rid of columns/features. The id column is useless.
         self.m_df.drop('id', axis=1, inplace=True)
+
 
     
 
@@ -96,37 +96,105 @@ class FeatureEngineering:
 
         
         # Viewing plots helps get a real handle on things so why not?
-        if showSteps is True:
-            sns.boxplot(x=column, data=self.m_df)
-            plt.show()
+        sns.boxplot(x=column, data=self.m_df)
+        plt.show()
 
         # Check if user wanted to remove outliers from actual dataframe.
         if removeOutliers is True:
-            if showSteps is True:
-                print(f'Dataframe shape PRE outlier removal: {self.m_df.shape}')
-            
+            originalShape = self.m_df.shape
+
             # Checking for points less than max but greater than min, removing outliers in both directions.
             self.m_df = self.m_df[(self.m_df[column] < max) & (self.m_df[column] > min)]
 
-            if showSteps is True:
-                print(f'Dataframe shape POST outlier removal: {self.m_df.shape}\n')               
-                sns.boxplot(x=column, data=self.m_df)
-                plt.show()
+            print(f'[Percentile-Outlier Removal] Original df shape: {originalShape}. Post outlier removal shape: {self.m_df.shape}')               
+            sns.boxplot(x=column, data=self.m_df)
+            plt.show()
 
         # If not, just create a new dataframe so the original isn't altered.
         else:
             dummyDf = self.m_df[(self.m_df[column] < max) & (self.m_df[column] > min)]
 
-            if showSteps is True:
-                print(f'Original df shape: {self.m_df.shape}. Shape with no outliers: {dummyDf.shape}')
-                sns.boxplot(x=column, data=dummyDf)
-                plt.show()
+            print(f'[Percentile-No outlier removal] Original df shape: {self.m_df.shape}. Shape with no outliers: {dummyDf.shape}')
+            sns.boxplot(x=column, data=dummyDf)
+            plt.show()
 
         return self.m_df
 
 
 
 
+
+    # Standard deviations can be used in a "range" manner to eliminate outliers in a specific range.
+    def OutliersStandardDeviation(self, column=None, showSteps=False, removeOutliers=False, range=2):
+        if column is None:
+            print('-----Please provide a column/feature name in the dataset listed below for this function.-----\n')
+            print(f'Column names:\n{self.m_df.columns[1:]}\n')
+            return
+        
+        ''' A histogram is necessary because it VISUALLY helps to explain the standard 
+            deviation (sd) approach. Sd's can be used in ranges. For example, if the mean
+            of a given dataset column/feature is 70, and a given datapoint is 93, the point
+            is trying to figure out how many sd RANGES the datapoint is from the mean. If
+            a dataset is normally distributed then most datapoints should be in 1 sd range.
+            
+            Then the case with outliers gets a bit clearer. The further sd ranges a datapoint
+            is, it can be an outlier. Normally 3 sd range is used, but playing around with 
+            values is good for educational purposes. '''
+        if showSteps is True:
+            plt.hist(self.m_df[column], bins=20, rwidth=0.8)
+            plt.xlabel(column)
+            plt.ylabel('Count')
+            plt.show()
+
+        ''' This is the simple formula. Remember that in order to find how
+            far the datapoint is from the mean, well the mean is necessary.
+            
+            Then we + or - it from the range. 
+                - Means the minimum or the lower side.
+                + Means the maximum or the higher side.
+                
+            Of course "sd" means Standard Deviation so that's definitely 
+            critical to the formula. The given values means "any value greater
+            than n, will be an outlier" or "any value smaller than n, will
+            be an outlier". Those are both cases for max and min.  '''
+        max = self.m_df[column].mean() + (range * self.m_df[column].std())
+        min = self.m_df[column].mean() - (range * self.m_df[column].std())
+
+        # Show the values calculated
+        if showSteps is True:
+            print(f'Values smaller than this: {min} will be viewed as outliers.')
+            print(f'Values greater than this: {max} will be viewed as outliers.\n')
+
+        # Also show the outliers themselves.
+        newDf = self.m_df[(self.m_df[column] < max) & (self.m_df[column] > min)]
+        if showSteps is True:
+            print(f'Observations in dataframe that are viewed as outliers:\n{newDf[column]}\n')
+            print(f'Old df shape: {self.m_df.shape}. New df shape: {newDf.shape}')
+            print(f'{self.m_df.shape[0] - newDf.shape[0]} outliers affected.')
+
+
+        # Check if user wanted to remove outliers from actual dataframe.
+        if removeOutliers is True:
+            originalShape = self.m_df.shape
+            
+            # Checking for points less than max but greater than min, removing outliers in both directions.
+            self.m_df = self.m_df[(self.m_df[column] < max) & (self.m_df[column] > min)]
+            
+            print(f'[Standard deviation-Outlier Removal] Original df shape: {originalShape}. Post outlier removal shape: {self.m_df.shape}')
+            plt.hist(self.m_df[column], bins=20, rwidth=0.8)
+
+        # If not, just create a new dataframe so the original isn't altered.
+        else:
+            dummyDf = self.m_df[(self.m_df[column] < max) & (self.m_df[column] > min)]
+
+            print(f'[Standard deviation-Outlier Removal] Original df shape: {self.m_df.shape}. Shape with no outliers: {dummyDf.shape}')
+            plt.hist(dummyDf[column], bins=20, rwidth=0.8)
+        
+        plt.xlabel(column)
+        plt.ylabel('Count')
+        plt.show()
+
+        return self.m_df
 
 
 

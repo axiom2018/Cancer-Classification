@@ -40,7 +40,10 @@ dcav = DataCleaningAndValidation(df)
 # --- Feature engineering performs operations on features to increase performance. Vital step.
 fe = FeatureEngineering(df)
 fe.LabelEncoding()
-df = fe.OutliersPercentile()
+# df = fe.OutliersPercentile('radius_mean', showSteps=False, removeOutliers=True)
+# df = fe.OutliersStandardDeviation('radius_mean', True, True)
+
+
 # fe.Correlation(2, False, False)
 # fe.ShowHeatMap()
 # fe.Correlation()
