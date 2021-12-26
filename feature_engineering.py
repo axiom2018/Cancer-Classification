@@ -122,8 +122,6 @@ class FeatureEngineering:
 
 
 
-
-
     # Standard deviations can be used in a "range" manner to eliminate outliers in a specific range.
     def OutliersStandardDeviation(self, column=None, showSteps=False, removeOutliers=False, range=2):
         if column is None:
@@ -195,6 +193,46 @@ class FeatureEngineering:
         plt.show()
 
         return self.m_df
+
+
+
+    ''' Z scores will give numbers that tells us how many standard deviation (sd) ranges 
+        a data point is away from the mean. So it's a cousin of the standard deviation 
+        attempt above, still pretty cool though. For example, if a datapoint is 3 sd's 
+        away, the z score will be 3. The formula is:
+        
+        z = x - u
+            /
+            o
+        
+        x - The datapoint value. Say if the mean is 50 and there can be a datapoint of 78.
+        u - The mean value.
+        o - Standard deviation. 
+        
+        This function will assist only SHOW the z score to remove certain data points.  '''
+    def OutliersZScore(self, column=None, zscore=2):
+        if column is None:
+            print('-----Please provide a column/feature name in the dataset listed below for this function.-----\n')
+            print(f'Column names:\n{self.m_df.columns[1:]}\n')
+            return
+
+        # Get a copy of the main dataframe.
+        df = self.m_df.copy()
+
+        print(f'Calculating z score with column {column}.')
+
+        # Use the formula and print an edited dataframe with only the argument column and z score.
+        df['Z score'] = (df[column] - df[column].mean()) / df[column].std()
+        df = df[[column, 'Z score']]
+        print(df)
+
+        # Show the outlier results.
+        print(f'---Outliers greater than z score {zscore}:')
+        print(df[df['Z score'] > zscore])
+
+        print(f'\n\n---Outliers less than z score {zscore}:')
+        print(df[df['Z score'] < -zscore])
+
 
 
 
