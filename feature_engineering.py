@@ -1,14 +1,10 @@
 import matplotlib.pyplot as plt
 from numpy.core.fromnumeric import var
-from pandas.core.indexes import category
-from scipy.sparse import data
 import seaborn as sns
 import pandas as pd
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from sklearn.preprocessing import LabelEncoder
-from feature_engine.encoding import MeanEncoder
 
-from sklearn.model_selection import train_test_split
 
 ''' 
 
@@ -25,10 +21,118 @@ class FeatureEngineering:
         # A part of feature engineering is getting rid of columns/features. The id column is useless.
         self.m_df.drop('id', axis=1, inplace=True)
 
+    
+
+    ''' Percentile scoring is simple so here's an example with a dataset:
+
+                    Points in game      Percent         Percentile rank
+        trisha      57                  57%             25%
+        john        80                  80%             75%
+        carl        71                  71%             50%
+        bob         43                  43%             0%
+        roxanne     98                  98%             100%
+
+        Roxanne got the highest points so in the percentile RANK, it's said she
+        beat 100% of others. On the opposite, Bob got the lowest so we say he beat
+        0% of others. Carl is in the middle, because there are 5 examples (including
+        Carl) so half the observations are below 71%. That's true, both Trisha
+        and Bob are below that. Yet John and Roxanne are well above. So Carl has
+        a 50% percentile rank.
+
+        To see how this applies to real world machine learning, what if a dataset
+        has an age column/feature? Then you can see the dataframe but a few peoples
+        ages might be 189, 213, 423, etc. That makes no sense whatsoever so viewing
+        them as outliers is a proper approach. Maybe doing something like
+        df['age'].quantile(0.90) to get the value that represents being above
+        90% quantile would be appropriate. Then any value greater than that, get rid 
+        of it. 
+        
+        
+        column - Be sure a proper column name is provided. User PROBABLY won't remember 
+            them so if this function is called with no arguments, force them to pick one 
+            and provide it. 
+            
+        showSteps - There's a lot to see if this function is used. But if they just want
+            to get the result without the steps then this should be false.
+
+        removeOutliers - It's also important to say not everything might be a true "removable"
+            outlier. If there is a value that's super high, maybe it's valid. So
+            removal might end up hurting more. Always be careful when dealing with
+            outliers!
+            
+        high/low - These are the quantile decimal values. For example, if high is 90, then
+            in the .quantile function used on the given column will return a particular
+            float value that basically is the equivalent of saying "Okay anything above
+            this particular value will be considered as an outlier". 
+            
+                So with the above said, this is probably the most important part of this
+                long comment. There is NOT "for sure" or "guaranteed" values to remove
+                all outliers from any feature/column. Experimenting with these values
+                is key. Which is why default values are given but the user is free 
+                to mess around with these. '''
+    def OutliersPercentile(self, column=None, showSteps=False, removeOutliers=False, high=0.90, low=0.02):
+        if column is None:
+            print('-----Please provide a column/feature name in the dataset listed below for this function.-----\n')
+            print(f'Column names:\n{self.m_df.columns[1:]}\n')
+            return
+
+        ''' With selected column, get the number that represents being better than a 
+            certain percentile. In this case, it's being better than the value of the
+            argument "high", a decimal value. If high is 0.90, this line will find
+            in whatever column, get the values above a 90th percentile. '''
+        max = self.m_df[column].quantile(high)
+        min = self.m_df[column].quantile(low)
+
+        if showSteps is True:
+            print(f'The float equivalent of the MAX {high}th percentile with column {column} is: {max}.')
+            print(f'The float equivalent of the MIN {low}th percentile with column {column} is: {min}\n')
+
+        # View all values above the high percentile in the dataframe
+        maxColumnDf = self.m_df[self.m_df[column] > max]
+        minColumnDf = self.m_df[self.m_df[column] < min]
+        if showSteps is True:
+            print(f'Values in dataframe that surpass the quantile {high} are:\n{maxColumnDf[column]}\n')
+            print(f'Values in dataframe that are below the quantile {low} are:\n{minColumnDf[column]}')
+
+        
+        # Viewing plots helps get a real handle on things so why not?
+        if showSteps is True:
+            sns.boxplot(x=column, data=self.m_df)
+            plt.show()
+
+        # Check if user wanted to remove outliers from actual dataframe.
+        if removeOutliers is True:
+            if showSteps is True:
+                print(f'Dataframe shape PRE outlier removal: {self.m_df.shape}')
+            
+            # Checking for points less than max but greater than min, removing outliers in both directions.
+            self.m_df = self.m_df[(self.m_df[column] < max) & (self.m_df[column] > min)]
+
+            if showSteps is True:
+                print(f'Dataframe shape POST outlier removal: {self.m_df.shape}\n')               
+                sns.boxplot(x=column, data=self.m_df)
+                plt.show()
+
+        # If not, just create a new dataframe so the original isn't altered.
+        else:
+            dummyDf = self.m_df[(self.m_df[column] < max) & (self.m_df[column] > min)]
+
+            if showSteps is True:
+                print(f'Original df shape: {self.m_df.shape}. Shape with no outliers: {dummyDf.shape}')
+                sns.boxplot(x=column, data=dummyDf)
+                plt.show()
+
+        return self.m_df
+
+
+
+
+
+
 
 
     # Label encoding is solely for categorical variables of course.
-    def LabelEncoding(self, showSteps=True):
+    def LabelEncoding(self, showSteps=False):
         le = LabelEncoder()
         self.m_df['diagnosis'] = le.fit_transform(self.m_df['diagnosis'])
 
