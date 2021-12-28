@@ -289,7 +289,7 @@ class FeatureEngineering:
             showSteps - There are a lot of steps that can be seen in the terminal to understand this
                 function. Default value is false just to avoid blowing the terminal up and 
                 getting to the point. '''
-    def Correlation(self, threshold=2, showHeatMap=False, showSteps=True):
+    def Correlation(self, threshold=2, showHeatMap=False, showSteps=False):
         if showHeatMap is True:
             plt.figure(figsize=(10, 10))
             matrix = sns.heatmap(self.m_df.iloc[:, 1:9].corr(), annot=True)

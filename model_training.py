@@ -1,6 +1,11 @@
 import optuna
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import VotingClassifier
+from sklearn import preprocessing
+from sklearn.pipeline import make_pipeline
 
 
 ''' 
@@ -25,12 +30,21 @@ class ModelTraining:
         self.m_X = self.m_df.iloc[:, 1:].values
         self.m_y = self.m_df.iloc[:, 0].values
 
+        # Simple list to hold all models. For use in TrainModels function.
+        self.m_models = []
+        
+        # Out of all models tested, this will be the main one used.
+        self.m_bestModel = None
+
         self.m_x_train, self.m_x_test, self.m_y_train, self.m_y_test = train_test_split(self.m_X, 
                     self.m_y, test_size=0.20, random_state=0)
 
+        ''' No need for the flood of output Optuna produces in the terminal. 
+            Turn it back on with "optuna.logging.enable_default_handler()" '''
+        optuna.logging.disable_default_handler()
 
 
-
+    
     def LogisticRegression(self, trial):
         ''' Search space, basically allows customization on model arguments. 
 
@@ -48,35 +62,221 @@ class ModelTraining:
                 absolute 0. DEFINITELY a game changer.
 
 
-            There's a million different combinations to produce the best results. I'll
-            put some in the comments that produced a LOWER result then what's currently
-            in the code.
+            There's a million different combinations to produce the best results. As seen
+            with the search space arguments.
 
-                1) solver = trial.suggest_categorical("solver", ("lbfgs", "saga"))
-                    cValue = trial.suggest_loguniform("C", 1e-7, 10.0)
-
-                    Result = 0.947
+            make_pipeline was put to use to rid the converge warning that starts off as 
+            "Increase the number of iterations (max_iter) or scale the data as shown in:". 
+            One recommended solution was to make use of a pipeline and here it is.
                 
         '''
-
-        # Result = 0.949.
-        epochs = trial.suggest_int("max_iter", 200, 500)
+        C = trial.suggest_loguniform("C", 1e-7, 10.0) 
         solver = trial.suggest_categorical("solver", ("lbfgs", "newton-cg"))
-        cValue = trial.suggest_loguniform("C", 1e-7, 10.0)
+        max_iter = trial.suggest_int("max_iter", 200, 500)
 
-        ''' After parameters beforehand are taken care of, then create model. 
-            Very important to do because each model has different parameters 
-            so optimizing for each one is tricky. '''
-        lr = LogisticRegression(max_iter=epochs, solver=solver, C=cValue)
+        pipe = make_pipeline(preprocessing.StandardScaler(), 
+                LogisticRegression(C=C, solver=solver, max_iter=max_iter))
 
-        score = cross_val_score(lr, self.m_X, self.m_y, n_jobs=1, cv=3)
+        pipe.fit(self.m_x_train, self.m_y_train)
+        
+        return pipe.score(self.m_x_test, self.m_y_test)
+
+
+
+    def RandomForest(self, trial):
+        ''' Defining the search space. 
+        
+            criterion - How good are the splits? Either gini or entropy determines that.
+                Since there's only 2 options for criterion here, might as well choose both.
+
+            max_depth - How deep the trees will be.
+
+            n_estimators - # of trees in the forest. Arguably the most vital parameter.
+
+            Current best parameters are currently in the function:
+
+                100 trials
+
+                Best is trial 15 with value: 0.9701383087347999.
+                parameters: {'criterion': 'entropy', 'max_depth': 17, 'n_estimators': 80}.
+        
+        '''
+        criterion = trial.suggest_categorical("criterion", ("gini", "entropy"))
+        maxDepth = trial.suggest_int("max_depth", 1, 20)
+        estimators = trial.suggest_int("n_estimators", 1, 100)
+
+        # Initialize the model, then get the score and accuracy.
+        rf = RandomForestClassifier(n_estimators=estimators, criterion=criterion, max_depth=maxDepth)
+
+        score = cross_val_score(rf, self.m_X, self.m_y, n_jobs=1, cv=3)
         accuracy = score.mean()
         return accuracy
 
+
     
-    def ApplyLogisticRegression(self):
+    def DecisionTree(self, trial):
+        ''' Defining the search space. 
+        
+            criterion - How good are the splits? Either gini or entropy determines that.
+                Since there's only 2 options for criterion here, might as well choose both.
+
+            splitter - For choosing splits. The 2 options are best and random. Selecting
+                best in theory should definitely work better.
+
+            max_depth - How deep the trees will be.
+
+            min_samples_split - # of samples needed before node splitting.
+
+            Current best parameters:
+
+                100 trials
+
+                Best is trial 73 with value: 0.9543488350505894.
+                parameters: {'criterion': 'entropy', 'splitter': 'random', 'max_depth': 16, 'min_samples_split': 3}
+        '''
+        criterion = trial.suggest_categorical("criterion", ("gini", "entropy"))
+        splitter = trial.suggest_categorical("splitter", ("best", "random"))
+        max_depth = trial.suggest_int("max_depth", 1, 20)
+        min_samples_split = trial.suggest_int("min_samples_split", 2, 5)
+
+        # Initialize the model, then get the score and accuracy.
+        dt = DecisionTreeClassifier(criterion=criterion, splitter=splitter, max_depth=max_depth, 
+            min_samples_split=min_samples_split)
+
+
+        score = cross_val_score(dt, self.m_X, self.m_y, n_jobs=1, cv=3)
+        accuracy = score.mean()
+        return accuracy
+
+
+
+    ''' All "apply" functions will be used to create study objects to 
+        run the core algorithms themselves. '''
+    def ApplyLogisticRegression(self, showSteps, epochs=100):
+        if showSteps is True:
+            print('Starting logistic regression optimization.')
+
         ''' Create the study necessary for it to run trials on the specified function. 
             The optimize function will begin the loop to run repeatedly in order to
             get the best model.'''
         study = optuna.create_study(direction='maximize')
-        study.optimize(self.LogisticRegression, n_trials=100)
+        study.optimize(self.LogisticRegression, n_trials=epochs)
+
+        # Brings back the best result from various parameters being tested.
+        trial = study.best_trial
+
+        ''' Get the individual arguments used in the real algorithm function, 
+            LogisiticRegression. Must make sure they match. Then afterwards
+            just initialize the model in here as well, train it, and return it. '''
+        solver = trial.params["solver"]
+        iterations = trial.params["max_iter"]
+        C = trial.params["C"]
+
+        lr = LogisticRegression(solver=solver, max_iter=iterations, C=C)
+        lr.fit(self.m_X, self.m_y)
+
+        if showSteps is True:
+            print('Logistic regression optimized.')
+
+        return lr
+
+        
+
+    def ApplyRandomForest(self, showSteps, epochs=100):
+        if showSteps is True:
+            print('Starting random forest optimization.')
+
+        study = optuna.create_study(direction='maximize')
+        study.optimize(self.RandomForest, n_trials=epochs)
+
+        trial = study.best_trial
+
+        criterion = trial.params["criterion"]
+        max_depth = trial.params["max_depth"]
+        estimators = trial.params["n_estimators"]
+
+        rf = RandomForestClassifier(criterion=criterion, max_depth=max_depth, n_estimators=estimators)
+        rf.fit(self.m_X, self.m_y)
+
+        if showSteps is True:
+            print('Random forest optimized.')
+
+        return rf
+
+
+
+    def ApplyDecisionTree(self, showSteps, epochs=100):
+        if showSteps is True:
+            print('Starting decision tree optimization.')
+
+        study = optuna.create_study(direction='maximize')
+        study.optimize(self.DecisionTree, n_trials=epochs)
+
+        trial = study.best_trial
+
+        criterion = trial.params["criterion"]
+        splitter = trial.params["splitter"]
+        max_depth = trial.params["max_depth"]
+        min_samples_split = trial.params["min_samples_split"]
+
+        dt = DecisionTreeClassifier(criterion=criterion, splitter=splitter, max_depth=max_depth,
+            min_samples_split=min_samples_split)
+        
+        dt.fit(self.m_X, self.m_y)
+
+        if showSteps is True:
+            print('Decision tree optimized.')
+
+        return dt
+
+
+
+    ''' The main function of this class. In order to get the voting classification
+        to fit in, there needs to be multiple different algorithms ready. In order
+        to have different ones ready, of course the multiple above functions utilizing
+        Optuna must be ran. This function will run them all, get their trained models,
+        and then use a voting classification to get the best model. '''
+    def TrainModels(self, showSteps=False):
+        if showSteps is True:
+            print('---Model training beginning---')
+
+        self.m_models.append(('Logistic Regression', self.ApplyLogisticRegression(True)))
+        self.m_models.append(('Random Forest', self.ApplyRandomForest(showSteps, 50)))
+        self.m_models.append(('Decision Tree', self.ApplyDecisionTree(showSteps)))
+
+        if showSteps is True:
+            print('---Model training is done.---\n')
+
+        # Initialize voting classifier and fit on x/y train data
+        vc = VotingClassifier(estimators=self.m_models, voting='hard')
+        vc.fit(self.m_x_train, self.m_y_train)
+
+        # For a type of model evaluation.
+        typeOfScoring = 'accuracy'
+
+        if showSteps is True:
+            print(f'---Printing {typeOfScoring} scores.---')        
+
+        # Loop through all models, get information and print it. 
+        for model in self.m_models:
+            score = cross_val_score(model[1], X=self.m_x_train, y=self.m_y_train, scoring=typeOfScoring, cv=10).mean()
+            print(f'{model[0]} accuracy score is {score}.')
+
+            ''' Get best model regarding score on every iteration. 
+            
+                If the variable is none, no model has been chosen. So if nothing is able 
+                to be compared to it yet, set whatever model in the loop as the chosen one.  '''
+            if self.m_bestModel is None:
+                if showSteps is True:
+                    print(f'-----Current best model: {model[0]} with score: {score}')
+                self.m_bestModel = (model[0], model[1], score)
+            else:
+                # Is the new model score, better than the current chosen one? If so, update chosen model.
+                if score > self.m_bestModel[2]:
+                    if showSteps is True:
+                        print(f'-----NEW best model: {model[0]} with new score: {score}')
+
+                    self.m_bestModel = (model[0], model[1], score)
+            
+        
+        print(f'\nBest model {self.m_bestModel[0]}. Score: {self.m_bestModel[2]}.')

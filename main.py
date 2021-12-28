@@ -52,8 +52,16 @@ fe.LabelEncoding()
 
 
 # --- Model training is like letting a student study. Here a part of feature engineering is applied.  Return models as well.
-# mt = ModelTraining(df)
+mt = ModelTraining(df)
 # mt.ApplyLogisticRegression()
+# mt.ApplyRandomForest()
+# mt.ApplyDecisionTree()
+mt.TrainModels(True)
+
+# test = ('Test', object, 89.5)
+# print(test)
+# print(test[2])
+
 # x_train, x_test, y_train, y_test = mt.GetTrainAndTestSets()
 # x_train, x_test = fe.UseScaling(x_train, x_test)
 # mt.Train(x_train, y_train)
