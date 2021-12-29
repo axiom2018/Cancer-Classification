@@ -6,6 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import VotingClassifier
+from sklearn.ensemble import StackingClassifier
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn import preprocessing
@@ -36,9 +37,6 @@ class ModelTraining:
 
         # Simple list to hold all models. For use in TrainModels function.
         self.m_models = []
-        
-        # Out of all models tested, this will be the main one used.
-        self.m_bestModel = None
 
         self.m_x_train, self.m_x_test, self.m_y_train, self.m_y_test = train_test_split(self.m_X, 
                     self.m_y, test_size=0.20, random_state=0)
@@ -46,6 +44,18 @@ class ModelTraining:
         ''' No need for the flood of output Optuna produces in the terminal. 
             Turn it back on with "optuna.logging.enable_default_handler()" '''
         optuna.logging.disable_default_handler()
+
+
+
+    # Getters for other requesting classes.
+    def GetModels(self):
+        return self.m_models
+
+    def GetXTest(self):
+        return self.m_x_test
+    
+    def GetYTest(self):
+        return self.m_y_test
 
 
     
@@ -111,6 +121,7 @@ class ModelTraining:
 
         # Initialize the model, then get the score and accuracy.
         rf = RandomForestClassifier(n_estimators=estimators, criterion=criterion, max_depth=maxDepth)
+        rf.fit(self.m_x_train, self.m_y_train)
 
         score = cross_val_score(rf, self.m_X, self.m_y, n_jobs=1, cv=3)
         accuracy = score.mean()
@@ -146,6 +157,7 @@ class ModelTraining:
         # Initialize the model, then get the score and accuracy.
         dt = DecisionTreeClassifier(criterion=criterion, splitter=splitter, max_depth=max_depth, 
             min_samples_split=min_samples_split)
+        dt.fit(self.m_x_train, self.m_y_train)
 
         score = cross_val_score(dt, self.m_X, self.m_y, n_jobs=1, cv=3)
         accuracy = score.mean()
@@ -302,23 +314,31 @@ class ModelTraining:
 
 
 
+    ''' The core model training function needed by below functions to
+        carry out their duties. The nameOfCaller is just the function
+        caller. '''
+    def CoreModelTraining(self, nameOfCaller, showSteps=False):
+        if showSteps is True:
+            print(f'---{nameOfCaller} model training beginning.---')
+
+        # self.m_models.append(('Logistic Regression', self.ApplyLogisticRegression(showSteps)))
+        # self.m_models.append(('Random Forest', self.ApplyRandomForest(showSteps, 50)))
+        self.m_models.append(('Decision Tree', self.ApplyDecisionTree(showSteps)))
+        # self.m_models.append(('SVM', self.ApplySVM(showSteps, 20)))
+        self.m_models.append(('Naive Bayes', self.ApplyNaiveBayes(showSteps)))
+
+        if showSteps is True:
+            print(f'---{nameOfCaller} model training done.---')
+
+
+
     ''' The main function of this class. In order to get the voting classification
         to fit in, there needs to be multiple different algorithms ready. In order
         to have different ones ready, of course the multiple above functions utilizing
         Optuna must be ran. This function will run them all, get their trained models,
         and then use a voting classification to get the best model. '''
     def TrainModelsVotingClassifier(self, showSteps=False):
-        if showSteps is True:
-            print('---Model training beginning---')
-
-        self.m_models.append(('Logistic Regression', self.ApplyLogisticRegression(showSteps)))
-        self.m_models.append(('Random Forest', self.ApplyRandomForest(showSteps, 50)))
-        self.m_models.append(('Decision Tree', self.ApplyDecisionTree(showSteps)))
-        self.m_models.append(('SVM', self.ApplySVM(showSteps, 20)))
-        self.m_models.append(('Naive Bayes', self.ApplyNaiveBayes(showSteps)))
-
-        if showSteps is True:
-            print('---Model training is done.---\n')
+        self.CoreModelTraining('Voting Classifier', showSteps)
 
         # Initialize voting classifier and fit on x/y train data
         vc = VotingClassifier(estimators=self.m_models, voting='hard')
@@ -342,3 +362,20 @@ class ModelTraining:
         vcPred = vc.predict(self.m_x_test)
 
         print(f'Accuracy score of voting classifier:\n{accuracy_score(self.m_y_test, vcPred)}\n')
+
+
+
+    ''' Create a meta learner/another model by combining other models.
+        Each of the models will make their own predictions. The prediction 
+        probability of each of them will be combined. The meta learner
+        will get the probability scores as input, so the meta learner 
+        will make the final prediction. '''
+    def TrainModelsStacking(self, showSteps=False):
+        self.CoreModelTraining('Stacking', showSteps)
+
+        # Initialize the stacked classifier and train it.
+        sc = StackingClassifier(estimators=self.m_models,final_estimator=LogisticRegression(max_iter=4000))
+        sc.fit(self.m_x_train, self.m_y_train)
+
+        xTestPredictions = sc.predict(self.m_x_test)
+        print(f'Accuracy score of stacking classifier:\n{accuracy_score(self.m_y_test, xTestPredictions)}')

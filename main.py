@@ -51,31 +51,27 @@ fe.LabelEncoding()
 # fe.UpdateFeaturesForCorrelation()
 
 
-# --- Model training is like letting a student study. Here a part of feature engineering is applied.  Return models as well.
+''' ---Model training---
+
+    Various types of models to be trained with any function with the following naming 
+    convention: "TrainModels(RestOfNameHere)". All models are tuned well with Optuna, 
+    and newer models can easily be added. '''
 mt = ModelTraining(df)
-# mt.ApplyLogisticRegression()
-# mt.ApplyRandomForest()
-# mt.ApplyDecisionTree()
-# mt.TrainModelsVotingClassifier(True)
-mt.TrainModelsStacking(True)
-
-# test = ('Test', object, 89.5)
-# print(test)
-# print(test[2])
-
-# x_train, x_test, y_train, y_test = mt.GetTrainAndTestSets()
-# x_train, x_test = fe.UseScaling(x_train, x_test)
-# mt.Train(x_train, y_train)
-# mt.AdaBoostModel()
-# mt.XgBoostModel()
-# mt.GradientBoost()
+mt.TrainModelsVotingClassifier()
+# mt.TrainModelsStacking(True)
 
 
-# # --- Use for accuracy and what not.
-# em = EvaluateModels(mt.GetModels(), x_test, y_test)
-# em.ViewClassificationReport()
-# em.ViewAccuracy()
-# em.ViewConfusionMatrices()
+''' ---Model metrics---
+
+    There are various ways to measure how good a model is. Accuracy, precision, f1 score,
+    and more. The interface in the EvaluateModels class handles this. '''
+em = EvaluateModels(mt.GetModels(), mt.GetXTest(), mt.GetYTest())
+# em.PrecisionAndRecall()
+# em.RocAucScore()
+# em.F1Score()
+# em.ClassificationReport()
+# em.Accuracy()
+# em.ConfusionMatrices()
+# print('\n\nCustom Model Metrics:\n')
 # em.CustomModelMetrics()
-# em.PlotRocCurves()
-# em.ApplyRegularization(x_train, y_train)
+em.PlotRocCurves()

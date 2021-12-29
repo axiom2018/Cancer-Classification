@@ -1,9 +1,6 @@
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import classification_report
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import roc_curve, roc_auc_score
-from sklearn import linear_model
-from sklearn.linear_model import Ridge
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score, roc_curve, roc_auc_score
+from sklearn.metrics import precision_score, recall_score, f1_score
 import matplotlib.pyplot as plt
 
 ''' 
@@ -19,10 +16,86 @@ class EvaluateModels:
         self.m_models = models
         self.m_xTest = xTest
         self.m_yTest = yTest
-        self.m_currentBestModel = None
-        self.m_currentBestModelScore = 0
+
+
+
+    ''' What is precision? 
+
+            Ex: In a model that's trying to predict if a hot dog
+            IS a hot dog or going for a hot dog, how many did the model get right?
+            
+            Out of 10 model predictions, a model can say 7 are hot dogs. But if
+            only 4 are correct that gives 4/7 which is 0.57. 
+
+            
+        What is recall? 
+
+            Carrying on from the hot dog example used above, recall says "out of all
+            the ground truths that are hot dogs, how many did the model actually get right?
+            
+            Out of 10 model predictions, if 6 are hot dogs but model got 4 right. That
+            gives 4/6 which is 0.67. '''
+    def PrecisionAndRecall(self):
+        for model in self.m_models:
+            yPred = model[1].predict(self.m_xTest)
+            precScore = precision_score(self.m_yTest, yPred)
+            recallScore = recall_score(self.m_yTest, yPred)
+            print(f"{model[0]}'s precision score: {round(precScore, 2)}. Recall score: {round(recallScore, 2)}.")
+        print('\n')
+            
+            
+
+    ''' What is roc_auc_score? 
+
+            It's a way to calculate the auc (area under the roc curve) GIVEN a roc curve. 
+            Roc curves are shown on a 2d plane where the x axis is normally the false 
+            positive rate and the y axis is normally the true positive rate. Then each 
+            plotting of a point means a certain confusion matrix has a certain amount of
+            true and false positives. 
         
-        self.m_listOfClassificationReports = []
+            So the auc measure the entire 2d area UNDERNEATH that curve.  '''
+    def RocAucScore(self):
+        for model in self.m_models:
+            yPred = model[1].predict(self.m_xTest) 
+            aucScore = roc_auc_score(self.m_yTest, yPred)
+            print(f"{model[0]}'s auc score: {round(aucScore, 2)}")
+        print('\n')
+
+
+
+    ''' What is an f1 score?
+        
+            It's a simple metric that finds that mean between precision and recall. 
+            Also known as the "harmonic mean" '''
+    def F1Score(self):
+        for model in self.m_models:
+            yPred = model[1].predict(self.m_xTest) 
+            aucScore = f1_score(self.m_yTest, yPred)
+            print(f"{model[0]}'s F1 score: {round(aucScore, 2)}")
+        print('\n')
+
+
+
+    ''' What is accuracy?
+    
+            It's how many of the predictions were right. Using the dog example found
+            in the comment above the "PrecisionAndRecall" function, that means out
+            of all the model predictions how many did the model get right? How many
+            predictions correctly matched the ground truths? Doesn't matter if the
+            model said dog or no dog, as long as it made the correct prediction. '''
+    def Accuracy(self):
+        for model in self.m_models:
+            accScore = round(accuracy_score(self.m_yTest, model[1].predict(self.m_xTest)), 2)
+            print(f'{model[0]} accuracy score is {accScore}')
+
+
+
+    # Classification reports are another way to get Precision, Recall, F1 score and more.
+    def ClassificationReport(self):
+        for model in self.m_models:
+            cr = classification_report(self.m_yTest, model[1].predict(self.m_xTest))
+            print(f'{model[0]} classification report:\n{cr}')
+
 
 
     ''' Confusion Matrix
@@ -31,53 +104,24 @@ class EvaluateModels:
 
         The top row shows how many that were cancerous in total, left and right.
 
-        Top left - Prediction is cancer, ground truth was cancer. 
-        Top right - Prediction is NOT cancer, ground truth was cancer.
+        A confusion matrix from sklearn.metrics is shown in the form:
+            TP  FN
+            FP  TN
 
-        Bottom left - Prediction is cancer, ground truth was not cancer.
-        Bottom right - Prediction is not cancer, ground truth was not cancer. 
+        Tp - Prediction is cancer, ground truth was cancer. 
+        FN - Prediction is NOT cancer, ground truth was cancer.
+
+        FP - Prediction is cancer, ground truth was not cancer.
+        RN - Prediction is not cancer, ground truth was not cancer. 
         
         Use every model and get the predictions for the model on the xtest values. 
         Then compare with the first argument given in the confusion_matrix, which is
-        ground truths, or the CORRECT values. '''
-    def ViewConfusionMatrices(self):
+        ground truths, which are the CORRECT values. '''
+    def ConfusionMatrices(self):
         for model in self.m_models:
             cm = confusion_matrix(self.m_yTest, model[1].predict(self.m_xTest))
             print(f'Confusion matrix for {model[0]} is:\n{cm}')
 
-
-    def ViewClassificationReport(self):
-        for model in self.m_models:
-            cr = classification_report(self.m_yTest, model[1].predict(self.m_xTest))
-            print(f'{model[0]} classification report:\n{cr}')
-
-            self.m_listOfClassificationReports.append(cr)
-
-
-    # This function will pick out a certain model based on its overall accuracy. 
-    def ViewAccuracy(self):
-        for model in self.m_models:
-            accScore = round(accuracy_score(self.m_yTest, model[1].predict(self.m_xTest)), 2)
-            print(f'{model[0]} accuracy score is {accScore}')
-
-            ''' If there is no current best model, set the first one. Afterwards when
-                the current best model value is NOT none, comparisons must begin with
-                the current best and whatever model is currently displaying its score
-                above.
-                
-                Simply compare the score of the model inside the 'model' variable
-                and see if it's greater than the self.m_currentBestModel score. If so,
-                that's a new best model! '''
-            if self.m_currentBestModel is None:
-                self.m_currentBestModel = model
-                self.m_currentBestModelScore = accScore
-            else:
-                if accScore > self.m_currentBestModelScore:
-                    print(f'''\n{model[0]} is new best model with a score of {accScore} which beat previous score of {self.m_currentBestModelScore}
-                    set by {self.m_currentBestModel[0]}\n''')
-
-                    self.m_currentBestModel = model
-                    self.m_currentBestModelScore = accScore
 
     
     ''' This is a function to manually calculate scores such as precision, recall, etc. 
@@ -120,9 +164,7 @@ class EvaluateModels:
             the predictions. Out of all the ground truths, how many did the model get right?
 
                 If there are 6 dogs in all ground truths, and the model got 4 right, that means
-                4 out of 6 were correct which is 0.67
-
-        '''
+                4 out of 6 were correct which is 0.67. '''
     def CustomModelMetrics(self):
         for model in self.m_models:
             ''' Get classification report and confusion matrix ready to SHOW the 
@@ -157,58 +199,51 @@ class EvaluateModels:
             print('\n\n')
 
     
-    # See logistic regression predictions alone.
+
+    ''' Plotting roc curves are crucial for a team to see where they model is at. On the 
+        x axis is normally the false positive (fp) rate or sometimes precision. The y 
+        axis is the true positive (tp) rate. Each axis is from 0 to 1. 
+
+        It's important to know the tp and fp formula:
+
+            tp = tp / tp + fn 
+            fp = fp / fp + tn
+        
+        Of course the confusion matrix will provide these values. What if there was a 
+        confusion matrix that looked like this:
+
+                Tp  Fp
+                4   4
+                0   0
+                Fn  Tn
+            
+        Then plugging in the values for the tp and fp formula, they come up to:
+
+            4 / 4 + 0 so the tp is 1
+            4 / 4 + 0 so the fp is 1 as well.
+
+        That means if this is plotted on the roc graph which both axis' are from 0 to 1,
+        that tells us that the model had a lot of correct values since the true positive
+        rate is so high! But it also had the same amount of false positives, which can
+        be dangerous depending on the problem you're trying to tackle with the model. '''
     def PlotRocCurves(self):
-        # Get each model prediction
-        yPreds = [model[1].predict(self.m_xTest) for model in self.m_models]
-        #print(yPreds[0])
+        for model in self.m_models:
+            # Predicting the probability of diagnosis 
+            probability = model[1].predict_proba(self.m_xTest)[:, 1]
 
-        # Then get the probability prediction for each model too. Use [:, 1] to only get 1 column.
-        probs = [model[1].predict_proba(self.m_xTest)[:, 1] for model in self.m_models]
+            # Get the auc score to show for the plot.
+            auc_score = roc_auc_score(self.m_yTest, probability)
 
-        # Get all auc scores.
-        aucScores = [roc_auc_score(self.m_yTest, probability) for probability in probs]
+            ''' Fp and tp will be used on the x and y axis. Threshold is important
+                because it can definitely change curves. '''
+            fp, tp, threshold = roc_curve(self.m_yTest, probability)
 
-        # Get all the false positive and true positive rates.
-        lrFalsePosRate, lrTruePosRate, lrThreshold = roc_curve(self.m_yTest, probs[0])
-        dtFalsePosRate, dtTruePosRate, dtThreshold = roc_curve(self.m_yTest, probs[1])
-        rfFalsePosRate, rfTruePosRate, rfThreshold = roc_curve(self.m_yTest, probs[2])
-        adaFalsePosRate, adaTruePosRate, adaThreshold = roc_curve(self.m_yTest, probs[3])
-        gbFalsePosRate, gbTruePosRate, gbThreshold = roc_curve(self.m_yTest, probs[4])
-
-        plt.plot(lrFalsePosRate, lrTruePosRate, linestyle='--', label="Logistic Regression (AUROC = %0.3f)" % aucScores[0])
-        plt.plot(dtFalsePosRate, dtTruePosRate, linestyle='--', label="Decision Tree (AUROC = %0.3f)" % aucScores[1])
-        plt.plot(rfFalsePosRate, rfTruePosRate, linestyle='--', label="Random Forest (AUROC = %0.3f)" % aucScores[2])
-        plt.plot(adaFalsePosRate, adaTruePosRate, linestyle='--', label="Adaboost Model (AUROC = %0.3f)" % aucScores[3])
-        plt.plot(gbFalsePosRate, gbTruePosRate, linestyle='solid', label="Gradient Boost (AUROC = %0.3f)" % aucScores[4])
+            # Detailed string redy for the plot.
+            plotLabel = f'{model[0]} (AUROC = %0.3f)' % auc_score
+            plt.plot(fp, tp, linestyle='--', label=plotLabel)
 
         plt.title("LR roc plot")
         plt.xlabel("False positives")
         plt.ylabel("True positives")
         plt.legend()
         plt.show()
-
-    
-    ''' Regularization is good because it ponteitally improve the models performance. It
-        penalizes high theta values. L2 regularization uses the square of the theta, but
-        in L1 it uses absolute value. 
-
-        L1 - Lasso
-        L2 - Ridge  
-        
-        Beware, several causes of underfit models might include: Not enough data, model 
-        too simple, regularization used. On the opposite side, overfitting can occur
-        if the model trains on too many useless features, or if model is too complex. '''
-    def ApplyRegularization(self, xTrain, yTrain):
-        lm = linear_model.Lasso(alpha=50, max_iter=1000, tol=0.1)
-        lm.fit(xTrain, yTrain)
-
-        print('---Beginning Lasso and Ridge regression---')
-        print(f'Lasso Model Training score: {lm.score(xTrain, yTrain)}')
-        print(f'Lasso Model Testing score: {lm.score(self.m_xTest, self.m_yTest)}')
-
-        rm = Ridge(alpha=50, max_iter=1000, tol=0.1)
-        rm.fit(xTrain, yTrain)
-        print(f'Ridge Model Training score: {rm.score(xTrain, yTrain)}')
-        print(f'Ridge Model Testing score: {rm.score(self.m_xTest, self.m_yTest)}')
-        print('---Ending Lasso and Ridge regression---\n')
