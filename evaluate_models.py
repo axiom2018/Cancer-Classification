@@ -19,29 +19,94 @@ class EvaluateModels:
 
 
 
+    ''' What is accuracy?
+    
+        It's how many of the predictions were right. Using the dog example found
+        in the comment above the "PrecisionAndRecall" function, that means out
+        of all the model predictions how many did the model get right? How many
+        predictions correctly matched the ground truths? Doesn't matter if the
+        model said dog or no dog, as long as it made the correct prediction. '''
+    def Accuracy(self, showSteps=False):
+        bestAccuracyModel = None
+
+        for model in self.m_models:
+            accScore = round(accuracy_score(self.m_yTest, model[1].predict(self.m_xTest)), 3)
+
+            if showSteps is True:
+                print(f'{model[0]} accuracy score is {accScore}')
+
+            ''' Code implementations like these are there to assist in finding the best
+                model based on the metric supplied by the user. For example in the BestModel
+                function. '''
+            if bestAccuracyModel is None:
+                bestAccuracyModel = (model[0], accScore)
+            else:
+                if accScore > bestAccuracyModel[1]:
+                    bestAccuracyModel = (model[0], accScore)
+
+        return bestAccuracyModel
+
+
+
+
     ''' What is precision? 
 
-            Ex: In a model that's trying to predict if a hot dog
-            IS a hot dog or going for a hot dog, how many did the model get right?
+        Ex: In a model that's trying to predict if a hot dog
+        IS a hot dog or going for a hot dog, how many did the model get right?
             
-            Out of 10 model predictions, a model can say 7 are hot dogs. But if
-            only 4 are correct that gives 4/7 which is 0.57. 
+        Out of 10 model predictions, a model can say 7 are hot dogs. But if
+        only 4 are correct that gives 4/7 which is 0.57. '''
+    def Precision(self, showSteps=False):
+        bestPrecisionModel = None
 
-            
-        What is recall? 
+        for model in self.m_models:
+            yPred = model[1].predict(self.m_xTest)
+            precScore = round(precision_score(self.m_yTest, yPred), 3)
 
+            if showSteps is True:
+                print(f"{model[0]}'s precision score: {precScore}.")
+
+            ''' Code implementations like these are there to assist in finding the best
+                model based on the metric supplied by the user. For example in the BestModel
+                function. '''
+            if bestPrecisionModel is None:
+                bestPrecisionModel = (model[0], precScore)
+            else:
+                if precScore > bestPrecisionModel[1]:
+                    bestPrecisionModel = (model[0], precScore)
+
+        return bestPrecisionModel
+
+
+    
+    ''' What is recall? 
+    
             Carrying on from the hot dog example used above, recall says "out of all
             the ground truths that are hot dogs, how many did the model actually get right?
             
             Out of 10 model predictions, if 6 are hot dogs but model got 4 right. That
             gives 4/6 which is 0.67. '''
-    def PrecisionAndRecall(self):
+    def Recall(self, showSteps=False):
+        bestRecallModel = None
+
         for model in self.m_models:
             yPred = model[1].predict(self.m_xTest)
-            precScore = precision_score(self.m_yTest, yPred)
-            recallScore = recall_score(self.m_yTest, yPred)
-            print(f"{model[0]}'s precision score: {round(precScore, 2)}. Recall score: {round(recallScore, 2)}.")
-        print('\n')
+            recallScore = round(recall_score(self.m_yTest, yPred), 3)
+
+            if showSteps is True:
+                print(f"{model[0]}'s recall score: {recallScore}.")
+
+            ''' Code implementations like these are there to assist in finding the best
+                model based on the metric supplied by the user. For example in the BestModel
+                function. '''
+            if bestRecallModel is None:
+                bestRecallModel = (model[0], recallScore)
+            else:
+                if recallScore > bestRecallModel[1]:
+                    bestRecallModel = (model[0], recallScore)
+
+        return bestRecallModel
+    
             
             
 
@@ -54,12 +119,23 @@ class EvaluateModels:
             true and false positives. 
         
             So the auc measure the entire 2d area UNDERNEATH that curve.  '''
-    def RocAucScore(self):
+    def RocAucScore(self, showSteps=False):
+        bestAucModel = None
+
         for model in self.m_models:
             yPred = model[1].predict(self.m_xTest) 
-            aucScore = roc_auc_score(self.m_yTest, yPred)
-            print(f"{model[0]}'s auc score: {round(aucScore, 2)}")
-        print('\n')
+            aucScore = round(roc_auc_score(self.m_yTest, yPred), 3)
+
+            if showSteps is True:
+                print(f"{model[0]}'s auc score: {aucScore}")
+        
+            if bestAucModel is None:
+                bestAucModel = (model[0], aucScore)
+            else:
+                if aucScore > bestAucModel[1]:
+                    bestAucModel = (model[0], aucScore)
+
+        return bestAucModel
 
 
 
@@ -67,26 +143,23 @@ class EvaluateModels:
         
             It's a simple metric that finds that mean between precision and recall. 
             Also known as the "harmonic mean" '''
-    def F1Score(self):
+    def F1Score(self, showSteps=False):
+        bestF1Model = None
+
         for model in self.m_models:
             yPred = model[1].predict(self.m_xTest) 
-            aucScore = f1_score(self.m_yTest, yPred)
-            print(f"{model[0]}'s F1 score: {round(aucScore, 2)}")
-        print('\n')
+            f1Score = round(f1_score(self.m_yTest, yPred), 3)
 
+            if showSteps is True:
+                print(f"{model[0]}'s F1 score: {f1Score}")
 
+            if bestF1Model is None:
+                bestF1Model = (model[0], f1Score)
+            else:
+                if f1Score > bestF1Model[1]:
+                    bestF1Model = (model[0], f1Score)
 
-    ''' What is accuracy?
-    
-            It's how many of the predictions were right. Using the dog example found
-            in the comment above the "PrecisionAndRecall" function, that means out
-            of all the model predictions how many did the model get right? How many
-            predictions correctly matched the ground truths? Doesn't matter if the
-            model said dog or no dog, as long as it made the correct prediction. '''
-    def Accuracy(self):
-        for model in self.m_models:
-            accScore = round(accuracy_score(self.m_yTest, model[1].predict(self.m_xTest)), 2)
-            print(f'{model[0]} accuracy score is {accScore}')
+        return bestF1Model
 
 
 
@@ -105,10 +178,10 @@ class EvaluateModels:
         The top row shows how many that were cancerous in total, left and right.
 
         A confusion matrix from sklearn.metrics is shown in the form:
-            TP  FN
-            FP  TN
+            TN  FP
+            FN  TP
 
-        Tp - Prediction is cancer, ground truth was cancer. 
+        TP - Prediction is cancer, ground truth was cancer. 
         FN - Prediction is NOT cancer, ground truth was cancer.
 
         FP - Prediction is cancer, ground truth was not cancer.
@@ -150,8 +223,8 @@ class EvaluateModels:
             truth shows it was in fact a dog.
         
         A confusion matrix from sklearn.metrics is shown in the form:
-            TP  FN
-            FP  TN
+            TN  FP
+            FN  TP
 
         a) Precision - Precision tells us out of ALL the positive values, in the example 
             case whether an image was a dog or not, out of all model predictions how many 
@@ -172,14 +245,14 @@ class EvaluateModels:
                 getting them. '''
             cf = classification_report(self.m_yTest, model[1].predict(self.m_xTest))
             cm = confusion_matrix(self.m_yTest, model[1].predict(self.m_xTest))
-            accScore = round(accuracy_score(self.m_yTest, model[1].predict(self.m_xTest)), 2)
+            accScore = round(accuracy_score(self.m_yTest, model[1].predict(self.m_xTest)), 3)
             print(f'{model[0]} Classification report:\n{cf}\n{model[0]} Confusion matrix:\n{cm}\nAccuracy score: {accScore}')
 
             # As noted in the comment above this function, confusion matrix has 4 values to help get other values.
-            tp = cm[0][0]
-            fn = cm[0][1]
-            fp = cm[1][0]
-            tn = cm[1][1]
+            tn = cm[0][0]
+            fn = cm[1][0]
+            tp = cm[1][1]
+            fp = cm[0][1]
 
             ''' The precision and recall are explained in comment before the function. But the precision
                 is pretty much a good mean, or overall performance of the model. Calculating it is 
@@ -190,9 +263,9 @@ class EvaluateModels:
                     /
                     precision + recall
                  '''
-            precision = round(tp / (tp + fp), 2)
-            recall = round(tp / (tp + fn), 2)
-            f1 = round((2 * (precision * recall) / (precision + recall)), 2)
+            precision = round(tp / (tp + fp), 3)
+            recall = round(tp / (tp + fn), 3)
+            f1 = round((2 * (precision * recall) / (precision + recall)), 3)
             print(f'Precision is {precision}')
             print(f'Recall is {recall}')
             print(f'F1 score is {f1}')
@@ -216,6 +289,9 @@ class EvaluateModels:
                 4   4
                 0   0
                 Fn  Tn
+
+        Also it's important to know that threshold plays a huge part in the confusion
+        matrix development. Playing with it's value will give a new outcome or matrix.
             
         Then plugging in the values for the tp and fp formula, they come up to:
 
@@ -247,3 +323,117 @@ class EvaluateModels:
         plt.ylabel("True positives")
         plt.legend()
         plt.show()
+
+    
+    ''' Helper function whose primary job is to decide which, out of all the matrices,
+        has the lowest value. The BestModel function will be using this.
+
+        modelsWithMatrices - The list comprehension does 1 thing which is get a list of 
+            tuples in the form of "(name of model, confusion matrix of that model)". In 
+            order to check for false positives the confusion matrices are needed.
+        
+        xIndex/yIndex - For example, if the BestModel function wanted to get the 
+            model who has the best false positive rate, then the false positive
+            would be at index 0, 1 in a matrix. So it would pass 0 and 1.
+            
+        metric - The name of the metric the function caller wants. '''
+    def LowestValuesOfConfusionMatrix(self, xIndex, yIndex, metric, showSteps=False):
+        modelsWithMatrices = [(model[0], confusion_matrix(self.m_yTest, model[1].predict(self.m_xTest))) for model in self.m_models]
+
+        bestModel = None
+            
+        ''' Trying to do a list comprehension with comparisons will likely be way to unreadable so a 
+            regular for loop is used here. 
+            
+            Getting the confusion matrix out of the tuple is necessary with the first line. Then
+            if no best model (best according to the current argument passed) is selected then just
+            assign the first entry as best.
+            
+            Then calculate the best models false positive rate. Best model is a tuple of the model
+            name and the false positive, which in the confusion matrix itself, is at index 0 & 1.
+            
+            https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html#sklearn.metrics.confusion_matrix 
+            
+            The link makes it clear that: 
+                1) True negative/tn - index 0,0
+                2) False negatives/fn - index 1,0
+                3) True positive/tp - index 1,1
+                4) False positive/fp - index 0,1 '''
+        for entity in modelsWithMatrices:
+            cm = entity[1]
+
+            if showSteps is True:
+                print(f'{entity[0]} has confusion matrix:\n{cm}')
+            
+            if bestModel is None:
+                bestModel = (entity[0], entity[1][xIndex][yIndex])
+            else:
+                ''' Calculate the best models false positive and the current models one as well.
+                    The new models false positive can be derived straight from the new confusion
+                    matrix. The current best models false positive rate was already calculated, 
+                    access that with index 1.
+                    
+                    Then only if it's LOWER, will it be considered better. False positives and
+                    false negatives are not something anyone wants MORE of. '''
+                rate = cm[xIndex][yIndex]
+
+                if showSteps is True:
+                    print(f'New model {entity[0]} has a {metric} of {entity[1][xIndex][yIndex]}')
+
+                if rate < bestModel[1]:
+                    bestModel = (entity[0], entity[1][xIndex][yIndex])
+        
+        if showSteps is True:
+            print(f'\n--Best model (based on {metric}) - Name: {bestModel[0]}. {metric} rate: {bestModel[1]} ')
+
+
+
+
+    ''' There are a lot of ways to determine a best model. When engineers start out,
+        it's common practice for them to look at only high accuracy that determines
+        whether a model is best out of a group of models. That's not really the case.
+        What if the metrics show that particular model has a high false positive (fp)
+        or false negative (fn)? That would be a troublesome model.
+        
+        With this function the best model will be selected according to the argument
+        "metric".  '''
+    def BestModel(self, metric='fp'):
+        # List of allowed metrics to check the argument.
+        listOfMetrics = ['fp', 'fn', 'accuracy', 'precision', 'recall', 'auc', 'f1']
+
+        if metric not in listOfMetrics:
+            print(f'{metric} was not in the list of metrics. List is:\n{listOfMetrics}.')
+            print('Call function again with one of the provided metrics.')
+            return
+
+        # Checks for false positive in if statement, then false negative in elif statement.
+        if metric is listOfMetrics[0]:
+            self.LowestValuesOfConfusionMatrix(0, 1, listOfMetrics[0], True)
+    
+        elif metric is listOfMetrics[1]:
+            self.LowestValuesOfConfusionMatrix(1, 0, listOfMetrics[1], True)
+
+        # Accuracy.
+        elif metric is listOfMetrics[2]:
+            model = self.Accuracy(True)
+            print(f'Model with best {listOfMetrics[2]} comes from {model[0]} with accuracy: {model[1]}')
+
+        # Precision.
+        elif metric is listOfMetrics[3]:
+            model = self.Precision(True)
+            print(f'Model with best {listOfMetrics[3]} comes from {model[0]} with accuracy: {model[1]}')
+
+        # Recall.
+        elif metric is listOfMetrics[4]:
+            model = self.Recall(True)
+            print(f'Model with best {listOfMetrics[4]} comes from {model[0]} with accuracy: {model[1]}')
+
+        # Auc score.
+        elif metric is listOfMetrics[5]:
+            model = self.RocAucScore(True)
+            print(f'Model with best {listOfMetrics[5]} comes from {model[0]} with accuracy: {model[1]}')
+
+        # Fi score.
+        elif metric is listOfMetrics[6]:
+            model = self.F1Score(True)
+            print(f'Model with best {listOfMetrics[6]} comes from {model[0]} with accuracy: {model[1]}')

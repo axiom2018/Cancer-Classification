@@ -58,7 +58,6 @@ fe.LabelEncoding()
     and newer models can easily be added. '''
 mt = ModelTraining(df)
 mt.TrainModelsVotingClassifier()
-# mt.TrainModelsStacking(True)
 
 
 ''' ---Model metrics---
@@ -66,12 +65,4 @@ mt.TrainModelsVotingClassifier()
     There are various ways to measure how good a model is. Accuracy, precision, f1 score,
     and more. The interface in the EvaluateModels class handles this. '''
 em = EvaluateModels(mt.GetModels(), mt.GetXTest(), mt.GetYTest())
-# em.PrecisionAndRecall()
-# em.RocAucScore()
-# em.F1Score()
-# em.ClassificationReport()
-# em.Accuracy()
-# em.ConfusionMatrices()
-# print('\n\nCustom Model Metrics:\n')
-# em.CustomModelMetrics()
-em.PlotRocCurves()
+em.BestModel('fp')

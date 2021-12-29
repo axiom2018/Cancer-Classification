@@ -321,8 +321,8 @@ class ModelTraining:
         if showSteps is True:
             print(f'---{nameOfCaller} model training beginning.---')
 
-        # self.m_models.append(('Logistic Regression', self.ApplyLogisticRegression(showSteps)))
-        # self.m_models.append(('Random Forest', self.ApplyRandomForest(showSteps, 50)))
+        self.m_models.append(('Logistic Regression', self.ApplyLogisticRegression(showSteps)))
+        self.m_models.append(('Random Forest', self.ApplyRandomForest(showSteps, 50)))
         self.m_models.append(('Decision Tree', self.ApplyDecisionTree(showSteps)))
         # self.m_models.append(('SVM', self.ApplySVM(showSteps, 20)))
         self.m_models.append(('Naive Bayes', self.ApplyNaiveBayes(showSteps)))
@@ -365,11 +365,10 @@ class ModelTraining:
 
 
 
-    ''' Create a meta learner/another model by combining other models.
-        Each of the models will make their own predictions. The prediction 
-        probability of each of them will be combined. The meta learner
-        will get the probability scores as input, so the meta learner 
-        will make the final prediction. '''
+    ''' Create a meta learner/another model by combining other models. Each of the models 
+        will make their own predictions. The prediction probability of each of them will 
+        be combined. The meta learner will get the probability scores as input, so the 
+        meta learner will make the final prediction. '''
     def TrainModelsStacking(self, showSteps=False):
         self.CoreModelTraining('Stacking', showSteps)
 
