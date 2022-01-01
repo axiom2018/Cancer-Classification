@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import stats
+import streamlit as st
+from data import Data
 
 ''' 
 
@@ -13,13 +15,13 @@ This class is for showing information about the dataset being used and possibly 
 
 '''
 
-class DataAnalysis:
+class DataAnalysis(Data):
     ''' Default arguments will show certain things based on provided arguments during class object creation. 
         This allows the user to see what they would like and not even have to manually call the function
         themselves. '''
     def __init__(self, df, showDataDetails=False, showCountPlot=False, showBoxPlot=False):
         self.m_df = df
-
+        
         if showDataDetails is True:
             self.ShowDataFrameDetails()
 
@@ -28,6 +30,26 @@ class DataAnalysis:
 
         if showBoxPlot is True:
             self.BoxPlot()
+
+
+    # Display all sorts of details on the dataframe to the user. 
+    def Display(self):
+        st.write('### [Data Analysis] Shows details on the dataframe, visualizations as well.')
+
+        st.write('#### Dataframe: ')
+        st.write(self.m_df.head(8))
+
+        st.write("")
+        st.write("")
+        st.write('#### Smaller details:')
+        st.write(f'Dataframe shape (Rows/Columns): {self.m_df.shape}')
+        st.write(f'Unique classes: {self.m_df.diagnosis.unique()}')
+        st.write('Heatmap:')
+
+        fig = plt.figure(figsize=(10, 10))
+        sns.heatmap(self.m_df.iloc[:, 1:9].corr(), annot=True)
+        st.pyplot(fig)
+        
 
 
 

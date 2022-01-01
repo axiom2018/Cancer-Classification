@@ -3,6 +3,7 @@ import seaborn as sns
 import pandas as pd
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from sklearn.preprocessing import LabelEncoder
+import streamlit as st
 
 
 ''' 
@@ -19,8 +20,25 @@ class FeatureEngineering:
 
         # A part of feature engineering is getting rid of columns/features. The id column is useless.
         self.m_df.drop('id', axis=1, inplace=True)
+        st.session_state.updatedDf.drop('id', axis=1, inplace=True)
 
 
+    def Display(self):
+        st.write('### [Feature Engineering] Changing features for 1 reason or another can effect model performance.')
+        st.write('')
+        st.write('')
+        st.write('##### Since this process effects features/columns, here they all are: ')
+        st.write(f'{st.session_state.updatedDf.columns.to_list()}')
+
+        st.write('')
+        st.write('')
+        st.write('##### Remove features that have high VIF (Variance Inflation factor) which is which features are highly correlated with the data.')
+        self.LabelEncoding(False, True)
+        self.Correlation(2, False, False, True)
+
+    
+    def UpdateDataframe(self):
+        print('Feature engineering update func.')
     
 
     ''' Percentile scoring is simple so here's an example with a dataset:
@@ -238,7 +256,7 @@ class FeatureEngineering:
 
 
     # Label encoding is solely for categorical variables of course.
-    def LabelEncoding(self, showSteps=False):
+    def LabelEncoding(self, showSteps=False, streamLitRequest=False):
         le = LabelEncoder()
         self.m_df['diagnosis'] = le.fit_transform(self.m_df['diagnosis'])
 
@@ -248,6 +266,16 @@ class FeatureEngineering:
 
             print('\nUnique values of categorical column:')
             print(self.m_df['diagnosis'].value_counts())
+        
+
+        ''' This function, if used with a stream lit request, must edit the
+            categorical feature/column in the updated dataframe. It's not 
+            reasonable to use anything but the updated dataframe which is
+            stored in the streamlit session state because that dataframe could
+            of been altered in the last class.  '''
+        if streamLitRequest is True:
+            st.session_state.updatedDf['diagnosis'] = le.fit_transform(st.session_state.updatedDf['diagnosis'])
+            # st.write(st.session_state.updatedDf)
 
 
 
@@ -260,6 +288,7 @@ class FeatureEngineering:
         Also sort it to make it easier to see where the highest vif values are. '''
     def CalculateVifScore(self, df):
         vif = pd.DataFrame()
+        vif.astype(float)
         vif['Features'] = df.columns
         vif['Vif_Score'] = [variance_inflation_factor(df.values, i) for i in range(self.m_df.shape[1])]
         vif.sort_values(by=['Vif_Score'], inplace=True, ascending=False)
@@ -289,14 +318,23 @@ class FeatureEngineering:
             showSteps - There are a lot of steps that can be seen in the terminal to understand this
                 function. Default value is false just to avoid blowing the terminal up and 
                 getting to the point. '''
-    def Correlation(self, threshold=2, showHeatMap=False, showSteps=False):
-        if showHeatMap is True:
+    def Correlation(self, threshold=2, showHeatMap=False, showSteps=False, streamLitRequest=False):
+        if showSteps is True and streamLitRequest is False:
             plt.figure(figsize=(10, 10))
             matrix = sns.heatmap(self.m_df.iloc[:, 1:9].corr(), annot=True)
             plt.show()
 
         # Create the table of vif values and print it.
-        vdf = self.CalculateVifScore(self.m_df)
+        vdf = None 
+        
+        # Pass proper dataframe just incase the request to do so is streamlit based.
+        if streamLitRequest is False:
+            vdf = self.CalculateVifScore(self.m_df)
+        else:
+            vdf = self.CalculateVifScore(st.session_state.updatedDf)
+            st.write('')
+            st.write('###### Vif Scores (Higher the score, the more correlated a feature is with rest of data):')
+            st.write(vdf)
 
         if showSteps is True:
             print(f'VIF results:\n{vdf}\n')
@@ -311,6 +349,20 @@ class FeatureEngineering:
 
         if showSteps is True:
             print(f'\nThe first {threshold} values according to threshold are: {featuresToLookInto}\n')
+
+
+        # Give suspicious features to streamlit screen.
+        if streamLitRequest is True:
+            st.write(f'Top features to investigate: {featuresToLookInto}')
+            st.write('')
+            st.write('')
+            st.write('')
+            st.write('Before getting the new table/VIF scores. Steps must be taken.')
+            st.write('1) Finding the highest values')
+            st.write('2) Dropping the highly correlated features/column from the dataframe.')
+            st.write('3) Calculate Vif scores again.')
+            st.write(f'4) Do steps 1-3 a certain # of times. This approach will have it done {threshold} times.')
+            st.write('')
 
 
         ''' So based on the vif scores, what variables should be dropped and which
@@ -361,6 +413,9 @@ class FeatureEngineering:
             # Drop the column and get the vif ratings again.
             self.m_df.drop([featuresToLookInto[i]], axis=1, inplace=True)
 
+            if streamLitRequest is True:
+                st.session_state.updatedDf.drop([featuresToLookInto[i]], axis=1, inplace=True)
+
             # Create the new table of vif values and print it.
             vdf = self.CalculateVifScore(self.m_df)
 
@@ -369,3 +424,10 @@ class FeatureEngineering:
         if showSteps is True:
             print(f'-----Final VIF results table:-----\n{vdf}\n')
             print(f'-----Current dataframe:-----\n{self.m_df}')
+
+        if streamLitRequest is True:
+            st.write('')
+            st.write('')
+            st.write('')
+            st.write(f'##### After removing the previous features {featuresToLookInto}. Final VIF dataframe looks like:')
+            st.write(vdf)
