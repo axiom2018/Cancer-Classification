@@ -11,6 +11,8 @@ from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn import preprocessing
 from sklearn.metrics import accuracy_score
+from data import Data
+import streamlit as st
 
 
 ''' 
@@ -26,7 +28,7 @@ Splitting the dataframe up and building the model will be this classes responsib
 '''
 
 
-class ModelTraining:
+class ModelTraining(Data):
     def __init__(self, df):
         self.m_df = df
 
@@ -37,6 +39,9 @@ class ModelTraining:
 
         # Simple list to hold all models. For use in TrainModels function.
         self.m_models = []
+        
+        # This list of models is specifically for streamlit.
+        self.m_strModels = ['Logisitic Regression', 'Random Forest', 'Decision Tree', 'Svm', 'Naive Bayes']
 
         self.m_x_train, self.m_x_test, self.m_y_train, self.m_y_test = train_test_split(self.m_X, 
                     self.m_y, test_size=0.20, random_state=0)
@@ -44,6 +49,69 @@ class ModelTraining:
         ''' No need for the flood of output Optuna produces in the terminal. 
             Turn it back on with "optuna.logging.enable_default_handler()" '''
         optuna.logging.disable_default_handler()
+
+        ''' While testing the core functionality in the Display function, this
+            boolean helps the functions not run repeatedly if this class was
+            last in line the 'listOfClasses' found in main.py. Was used primarily
+            for testing purposes to guarantee the code this boolean controls
+            wouldn't run multiple times. '''
+        self.m_modelSelection = False
+
+
+
+    def Display(self):
+        st.write('##### [Model Training] Several models are available for training and testing. All are optimized with Optuna!')
+        st.write('')
+        if self.m_modelSelection is False:
+            modelName = st.selectbox("Select model:", self.m_strModels)
+            st.write(f'###### Current model selected: {modelName}')
+
+            st.write('')
+            st.write('')
+            st.write('')
+            st.write('###### Press button below to begin model training after selection.')
+
+            
+            if st.button('Train Model') is True:
+                # Variable below will be assigned to the stream lit session state for use in evaluate model step.
+                model = None
+
+                st.write('')
+                st.write('')
+                st.write('###### Training model. (Please wait)')
+
+                # Check if model name matches entry in the string models, if so, create the model.
+                if modelName is self.m_strModels[0]:
+                    model = self.ApplyLogisticRegression(False)
+                elif modelName is self.m_strModels[1]:
+                    model = self.ApplyRandomForest(False)
+                elif modelName is self.m_strModels[2]:
+                    model = self.ApplyDecisionTree(False)
+                elif modelName is self.m_strModels[3]:
+                    model = self.ApplySVM(False)
+                elif modelName is self.m_strModels[4]:
+                    model = self.ApplyNaiveBayes(False)
+
+                st.write('')
+                st.write('')
+                st.write(f'##### Training for model {modelName} is done. Continue to next page for model evaluation.')
+
+                # Put the model into the session state.
+                if 'chosenModel' not in st.session_state:
+                    st.session_state.chosenModel = model
+
+                # Also the EvaluateModels class will need x & y test.
+                if 'xTest' not in st.session_state:
+                    st.session_state.xTest = self.m_x_test
+                    st.session_state.yTest = self.m_y_test
+
+            
+                self.m_modelSelection = True
+    
+
+    def UpdateDataframe(self):
+        pass
+
 
 
 
@@ -81,9 +149,7 @@ class ModelTraining:
 
             make_pipeline was put to use to rid the converge warning that starts off as 
             "Increase the number of iterations (max_iter) or scale the data as shown in:". 
-            One recommended solution was to make use of a pipeline and here it is.
-                
-        '''
+            One recommended solution was to make use of a pipeline and here it is. '''
         C = trial.suggest_loguniform("C", 1e-7, 10.0) 
         solver = trial.suggest_categorical("solver", ("lbfgs", "saga"))
         max_iter = trial.suggest_int("max_iter", 4000, 4000)
@@ -337,7 +403,7 @@ class ModelTraining:
         to have different ones ready, of course the multiple above functions utilizing
         Optuna must be ran. This function will run them all, get their trained models,
         and then use a voting classification to get the best model. '''
-    def TrainModelsVotingClassifier(self, showSteps=False):
+    def TrainModelsVotingClassifier(self, showSteps=False, streamlitRequest=False):
         self.CoreModelTraining('Voting Classifier', showSteps)
 
         # Initialize voting classifier and fit on x/y train data
@@ -355,13 +421,23 @@ class ModelTraining:
         kf = KFold(shuffle=True, random_state=11)
         scores = cross_validate(vc, X=self.m_x_train, y=self.m_y_train, cv=kf)
         testScores = scores['test_score']
-        print(f'Cross validation scores:\n{testScores}')
+
+        if streamlitRequest is False:
+            print(f'Cross validation scores:\n{testScores}')
+
 
         # Fit then get predictions and finally see the accuracy.
         vc.fit(self.m_x_train, self.m_y_train)
         vcPred = vc.predict(self.m_x_test)
 
-        print(f'Accuracy score of voting classifier:\n{accuracy_score(self.m_y_test, vcPred)}\n')
+        if streamlitRequest is False:
+            print(f'Accuracy score of voting classifier:\n{accuracy_score(self.m_y_test, vcPred)}\n')
+        else:
+            st.write('Accuracy score of voting classifier:')
+            st.write(accuracy_score(self.m_y_test, vcPred))
+
+        if streamlitRequest is True:
+            st.write(vc.estimators)
 
 
 

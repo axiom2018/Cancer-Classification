@@ -1,17 +1,16 @@
-import streamlit as st
-import SessionState
+# import streamlit as st
 
-''' 
+# ''' 
 
-            Page manager
+#             Page manager
 
-Streamlit will require multiple pages from this project so this .py file will handle that.
+# Streamlit will require multiple pages from this project so this .py file will handle that.
 
 
-'''
+# '''
 
-class PageManager:
-    def __init__(self):
-        self.apps = []
-        prev, _ ,next = st.columns([1, 10, 1])
-        test = st.button('Enter')
+# class PageManager:
+#     def __init__(self):
+#         self.apps = []
+#         prev, _ ,next = st.columns([1, 10, 1])
+#         test = st.button('Enter')

@@ -17,6 +17,18 @@ class EvaluateModels:
         self.m_xTest = xTest
         self.m_yTest = yTest
 
+    # Extra constructor for the streamlit flow of the program. 
+    def __init__(self):
+        pass
+
+
+
+    def Display(self):
+        pass
+    
+    def UpdateDataframe(self):
+        pass
+
 
 
     ''' What is accuracy?

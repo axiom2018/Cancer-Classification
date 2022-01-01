@@ -32,22 +32,23 @@ if 'df' not in st.session_state:
 # data, pass it the dataframe to work with.
 if 'listOfClasses' not in st.session_state:
     # Each class will be in a list.
-    st.session_state.listOfClasses = [('feature_engineering', FeatureEngineering(st.session_state.df)),
-        ('data_analysis', DataAnalysis(st.session_state.df)),
-        ('data_cleaning_and_validation', DataCleaningAndValidation(st.session_state.df))
+    st.session_state.listOfClasses = [('data_analysis', DataAnalysis(st.session_state.df)),
+        ('data_cleaning_and_validation', DataCleaningAndValidation(st.session_state.df)),
+        ('feature_engineering', FeatureEngineering(st.session_state.df)),
+        ('model_training', ModelTraining(st.session_state.df))
         ]
 
 
 # Page navigation buttons
-prev, _ ,next = st.columns([1, 10, 1])
+_ ,next = st.columns([10, 1])
 
 
 # Managing events then the buttons are pressed.
-if prev.button('Previous'):
-    if st.session_state.listIndex <= 0:
-        st.write('')
-    else:
-        st.session_state.listIndex -= 1
+# if prev.button('Previous'):
+#     if st.session_state.listIndex <= 0:
+#         st.write('')
+#     else:
+#         st.session_state.listIndex -= 1
 
 if next.button('Next'):
     if st.session_state.listIndex + 1 >= len(st.session_state.listOfClasses):
@@ -58,7 +59,6 @@ if next.button('Next'):
 
 
 # st.write(st.session_state.listOfClasses[st.session_state.listIndex][0])
-
 st.session_state.listOfClasses[st.session_state.listIndex][1].Display()
 
 
@@ -85,16 +85,12 @@ st.session_state.listOfClasses[st.session_state.listIndex][1].Display()
 # # dcav.RemoveOutliers('texture_se') 
 
 
-
-
-
 # # --- Feature engineering performs operations on features to increase performance. Vital step.
 # fe = FeatureEngineering(df)
 # fe.LabelEncoding()
 # # df = fe.OutliersPercentile('radius_mean', showSteps=False, removeOutliers=True)
 # # df = fe.OutliersStandardDeviation('radius_mean', True, True)
 # # fe.OutliersZScore()
-
 # # fe.Correlation(2, False, False)
 # # fe.ShowHeatMap()
 # # fe.Correlation()
@@ -103,17 +99,16 @@ st.session_state.listOfClasses[st.session_state.listIndex][1].Display()
 
 
 # ''' ---Model training---
-
-#     Various types of models to be trained with any function with the following naming 
-#     convention: "TrainModels(RestOfNameHere)". All models are tuned well with Optuna, 
-#     and newer models can easily be added. '''
+# # Various types of models to be trained with any function with the following naming 
+# # convention: "TrainModels(RestOfNameHere)". All models are tuned well with Optuna, 
+# # and newer models can easily be added. '''
 # mt = ModelTraining(df)
 # mt.TrainModelsVotingClassifier()
 
 
 # ''' ---Model metrics---
 
-#     There are various ways to measure how good a model is. Accuracy, precision, f1 score,
-#     and more. The interface in the EvaluateModels class handles this. '''
+# # There are various ways to measure how good a model is. Accuracy, precision, f1 score,
+# # and more. The interface in the EvaluateModels class handles this. '''
 # em = EvaluateModels(mt.GetModels(), mt.GetXTest(), mt.GetYTest())
 # em.BestModel('fp')

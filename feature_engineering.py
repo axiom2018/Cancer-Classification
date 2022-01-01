@@ -4,7 +4,7 @@ import pandas as pd
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from sklearn.preprocessing import LabelEncoder
 import streamlit as st
-
+from data import Data
 
 ''' 
 
@@ -14,13 +14,20 @@ Feature engineering is an extra few steps that can increase the overall model pe
 
 '''
 
-class FeatureEngineering:
+class FeatureEngineering(Data):
     def __init__(self, df):
         self.m_df = df
 
         # A part of feature engineering is getting rid of columns/features. The id column is useless.
         self.m_df.drop('id', axis=1, inplace=True)
         st.session_state.updatedDf.drop('id', axis=1, inplace=True)
+
+        ''' While testing the core functionality in the Display function, this
+            boolean helps the functions not run repeatedly if this class was
+            last in line the 'listOfClasses' found in main.py. Was used primarily
+            for testing purposes to guarantee the code this boolean controls
+            wouldn't run multiple times. '''
+        self.m_stEncodeAndCorrelationDone = False
 
 
     def Display(self):
@@ -33,8 +40,10 @@ class FeatureEngineering:
         st.write('')
         st.write('')
         st.write('##### Remove features that have high VIF (Variance Inflation factor) which is which features are highly correlated with the data.')
-        self.LabelEncoding(False, True)
-        self.Correlation(2, False, False, True)
+        if self.m_stEncodeAndCorrelationDone is False:
+            self.LabelEncoding(False, True)
+            self.Correlation(2, False, False, True)
+            self.m_stEncodeAndCorrelationDone = True
 
     
     def UpdateDataframe(self):

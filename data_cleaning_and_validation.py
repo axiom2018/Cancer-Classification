@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import scipy as sp
 import streamlit as st
-
+from data import Data
 
 ''' 
 
@@ -16,7 +16,7 @@ are what make up data cleaning and validation.
 
 '''
 
-class DataCleaningAndValidation:
+class DataCleaningAndValidation(Data):
     def __init__(self, df, showColumnNames=False, showNullValues=False):
         self.m_df = df
         self.m_checkBoxClicked = False
@@ -60,10 +60,10 @@ class DataCleaningAndValidation:
             if statements below. '''
         if st.checkbox('Remove outliers (If desired, it not, leave unchecked & click next)'):
             self.m_checkBoxClicked = True
-            st.write('Boolean is true.')
+            # st.write('Boolean is true.')
         else:
             self.m_checkBoxClicked = False
-            st.write('Boolean is false.')
+            # st.write('Boolean is false.')
 
 
         ''' Since removing outliers can be a bit dangerous, it's definitely needed
@@ -79,7 +79,7 @@ class DataCleaningAndValidation:
             
             updatedDf - Declared in the  '''
         if 'dfCopy' not in st.session_state and self.m_checkBoxClicked is False:
-            st.write('1st if.')
+            # st.write('1st if.')
             sns.boxplot(x=columnName, data=st.session_state.updatedDf)
             st.pyplot(fig)
 
@@ -87,7 +87,7 @@ class DataCleaningAndValidation:
             self.DataframeDetails(st.session_state.updatedDf)
         
         elif 'dfCopy' not in st.session_state and self.m_checkBoxClicked is True:
-            st.write('2nd if.')
+            # st.write('2nd if.')
             st.session_state.dfCopy = self.RemoveOutliers(columnName, False, True)
             sns.boxplot(x=columnName, data=st.session_state.dfCopy)
             st.pyplot(fig)
@@ -95,14 +95,14 @@ class DataCleaningAndValidation:
             self.DataframeDetails(st.session_state.dfCopy)
 
         elif 'dfCopy' in st.session_state and self.m_checkBoxClicked is False:
-            st.write('3rd if.')
+            # st.write('3rd if.')
             sns.boxplot(x=columnName, data=st.session_state.updatedDf)
             st.pyplot(fig)
 
             self.DataframeDetails(st.session_state.updatedDf)
         
         elif 'dfCopy' in st.session_state and self.m_checkBoxClicked is True:
-            st.write('4th if')
+            # st.write('4th if')
             st.session_state.dfCopy = self.RemoveOutliers(columnName, False, True)
             sns.boxplot(x=columnName, data=st.session_state.dfCopy)
             st.pyplot(fig)
