@@ -50,18 +50,67 @@ class ModelTraining(Data):
             Turn it back on with "optuna.logging.enable_default_handler()" '''
         optuna.logging.disable_default_handler()
 
-        ''' While testing the core functionality in the Display function, this
-            boolean helps the functions not run repeatedly if this class was
+
+
+    
+    ''' Streamlit function (constructor). The normal code that displays in the
+        terminal uses the other one to make use of variables. However with streamlit,
+        variables persist with session_state.
+        
+        
+        disable_default_handler() - No need for the flood of output Optuna produces 
+            in the terminal. Turn it back on with "optuna.logging.enable_default_handler()"
+            
+        m_modelSection - While testing the core functionality in the Display function, 
+            this boolean helps the functions not run repeatedly if this class was
             last in line the 'listOfClasses' found in main.py. Was used primarily
             for testing purposes to guarantee the code this boolean controls
-            wouldn't run multiple times. '''
+            wouldn't run multiple times.
+            
+        m_X/m_y, x/y_train & x/y_test - Set the necessary variables to be initialized here to 
+            default values but they'll be set when the Display function is called. The reason
+            for this is the dataframe will undergo changes during the course of the streamlit 
+            website being navigated by the user. For example in the dataframe to start, the 
+            diagnosis column/feature is categorical. But later on it's changed to numerical. 
+            So when the display function is called, variables like x_train will be properly set. ''' 
+    def __init__(self):        
+        optuna.logging.disable_default_handler()
+
         self.m_modelSelection = False
 
+        self.m_X = None
+        self.m_y = None
+
+        self.m_x_train = None
+        self.m_x_test = None
+        self.m_y_train = None
+        self.m_y_test = None
 
 
+
+    # Streamlit function Display is overriding base class function in Data.py
     def Display(self):
+        # Get the dataframe through session state to carry out rest of function code.
+        updatedDf = st.session_state.updatedDf
+
+        ''' X - The features that can detect if a person has cancer or not.
+            y - The target/real values that confirm if a person has cancer or not. '''
+        self.m_X = updatedDf.iloc[:, 1:].values
+        self.m_y = updatedDf.iloc[:, 0].values
+
+        # Simple list to hold all models. For use in TrainModels function.
+        self.m_models = []
+        
+        # This list of models is specifically for streamlit.
+        self.m_strModels = ['Logisitic Regression', 'Random Forest', 'Decision Tree', 'Svm', 'Naive Bayes']
+
+        self.m_x_train, self.m_x_test, self.m_y_train, self.m_y_test = train_test_split(self.m_X, 
+            self.m_y, test_size=0.20, random_state=0)
+
+
+
         st.write('##### [Model Training] Several models are available for training and testing. All are optimized with Optuna!')
-        st.write('')
+        
         if self.m_modelSelection is False:
             modelName = st.selectbox("Select model:", self.m_strModels)
             st.write(f'###### Current model selected: {modelName}')
@@ -98,7 +147,7 @@ class ModelTraining(Data):
 
                 # Put the model into the session state.
                 if 'chosenModel' not in st.session_state:
-                    st.session_state.chosenModel = model
+                    st.session_state.chosenModel = (modelName, model)
 
                 # Also the EvaluateModels class will need x & y test.
                 if 'xTest' not in st.session_state:
@@ -109,8 +158,6 @@ class ModelTraining(Data):
                 self.m_modelSelection = True
     
 
-    def UpdateDataframe(self):
-        pass
 
 
 

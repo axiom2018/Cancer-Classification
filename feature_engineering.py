@@ -30,8 +30,36 @@ class FeatureEngineering(Data):
         self.m_stEncodeAndCorrelationDone = False
 
 
+
+    ''' Streamlit function (constructor). The normal code that displays in the
+        terminal uses the other one to make use of variables. However with streamlit,
+        variables persist with session_state. ''' 
+    def __init__(self):
+        # Add boolean for encode and correlation so they don't repeatedly happen in the display function.
+        self.m_stEncodeAndCorrelationDone = False
+
+        # if 'encodedAndCorrelationBool' not in st.session_state:
+        #     st.session_state.encodedAndCorrelationBool = False
+
+
+    # Streamlit function Display is overriding base class function in Data.py
     def Display(self):
         st.write('### [Feature Engineering] Changing features for 1 reason or another can effect model performance.')
+        st.write('')
+        st.write('')
+        st.write('')
+
+        # First remove the id column, it's not necessary at all.
+        st.write(f'##### Remove column/feature [{st.session_state.updatedDf.columns[0]}] because it is not necessary.')
+        st.write(f'Dataframe CURRENT shape: {st.session_state.updatedDf.shape}. # of columns/features: {len(st.session_state.updatedDf.columns)}')
+        
+        st.session_state.df.drop('id', axis=1, inplace=True)
+        st.session_state.updatedDf.drop('id', axis=1, inplace=True)
+
+        st.write(f'Dataframe NEW shape: {st.session_state.updatedDf.shape}. # of columns/features: {len(st.session_state.updatedDf.columns)}')
+
+
+        st.write('')
         st.write('')
         st.write('')
         st.write('##### Since this process effects features/columns, here they all are: ')
@@ -40,14 +68,14 @@ class FeatureEngineering(Data):
         st.write('')
         st.write('')
         st.write('##### Remove features that have high VIF (Variance Inflation factor) which is which features are highly correlated with the data.')
+
+        # if st.session_state.encodedAndCorrelationBool is False:
         if self.m_stEncodeAndCorrelationDone is False:
             self.LabelEncoding(False, True)
             self.Correlation(2, False, False, True)
-            self.m_stEncodeAndCorrelationDone = True
+            st.session_state.encodedAndCorrelationBool = True
 
-    
-    def UpdateDataframe(self):
-        print('Feature engineering update func.')
+
     
 
     ''' Percentile scoring is simple so here's an example with a dataset:
@@ -267,9 +295,10 @@ class FeatureEngineering(Data):
     # Label encoding is solely for categorical variables of course.
     def LabelEncoding(self, showSteps=False, streamLitRequest=False):
         le = LabelEncoder()
-        self.m_df['diagnosis'] = le.fit_transform(self.m_df['diagnosis'])
 
         if showSteps is True:
+            self.m_df['diagnosis'] = le.fit_transform(self.m_df['diagnosis'])
+
             print('Result of label encoding for categorical column:')
             print(self.m_df['diagnosis'])
 
@@ -281,10 +310,17 @@ class FeatureEngineering(Data):
             categorical feature/column in the updated dataframe. It's not 
             reasonable to use anything but the updated dataframe which is
             stored in the streamlit session state because that dataframe could
-            of been altered in the last class.  '''
+            of been altered in the last class. '''
         if streamLitRequest is True:
             st.session_state.updatedDf['diagnosis'] = le.fit_transform(st.session_state.updatedDf['diagnosis'])
-            # st.write(st.session_state.updatedDf)
+            st.write('')
+            st.write('')
+            st.write('')
+            st.write(f'##### First encode the {st.session_state.updatedDf.columns[0]} feature/column:')
+            st.write(st.session_state.updatedDf['diagnosis'])
+            st.write('')
+            st.write('')
+            st.write('')
 
 
 
@@ -299,7 +335,7 @@ class FeatureEngineering(Data):
         vif = pd.DataFrame()
         vif.astype(float)
         vif['Features'] = df.columns
-        vif['Vif_Score'] = [variance_inflation_factor(df.values, i) for i in range(self.m_df.shape[1])]
+        vif['Vif_Score'] = [variance_inflation_factor(df.values, i) for i in range(df.shape[1])]
         vif.sort_values(by=['Vif_Score'], inplace=True, ascending=False)
         return vif
 
@@ -387,8 +423,17 @@ class FeatureEngineering(Data):
 
         for column in featuresToLookInto:
             # Get each specific column from dataframe and get correlation value.
-            col1 = self.m_df['diagnosis']
-            col2 = self.m_df[column]
+            col1 = None
+            col2 = None
+            if streamLitRequest is False:
+                col1 = self.m_df['diagnosis']
+                col2 = self.m_df[column]
+            else:
+                col1 = st.session_state.updatedDf['diagnosis']
+                col2 = st.session_state.updatedDf[column]
+            
+            # col1 = self.m_df['diagnosis']
+            # col2 = self.m_df[column]
             corrValue = round(col1.corr(col2), 5)
 
             if showSteps is True:
@@ -418,15 +463,19 @@ class FeatureEngineering(Data):
         while i >= 0:
             if showSteps is True:
                 print(f'Removing feature/column: {featuresToLookInto[i]}.')
-            
-            # Drop the column and get the vif ratings again.
-            self.m_df.drop([featuresToLookInto[i]], axis=1, inplace=True)
 
-            if streamLitRequest is True:
+            if streamLitRequest is False:
+                # Drop the column and get the vif ratings again.
+                self.m_df.drop([featuresToLookInto[i]], axis=1, inplace=True)
+            else:
                 st.session_state.updatedDf.drop([featuresToLookInto[i]], axis=1, inplace=True)
 
+
             # Create the new table of vif values and print it.
-            vdf = self.CalculateVifScore(self.m_df)
+            if streamLitRequest is False:
+                vdf = self.CalculateVifScore(self.m_df)
+            else:
+                vdf = self.CalculateVifScore(st.session_state.updatedDf)
 
             i -= 1
 
@@ -438,5 +487,11 @@ class FeatureEngineering(Data):
             st.write('')
             st.write('')
             st.write('')
-            st.write(f'##### After removing the previous features {featuresToLookInto}. Final VIF dataframe looks like:')
+            st.write(f'##### After removing the previous features {featuresToLookInto} the final VIF dataframe looks like:')
             st.write(vdf)
+
+            st.write('')
+            st.write('')
+            st.write('')
+            st.write(f'##### updatedDf feature/column length is {len(st.session_state.updatedDf.columns)} & the dataframe itself looks like: ')
+            st.write(st.session_state.updatedDf.head(5))

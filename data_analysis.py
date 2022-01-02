@@ -32,22 +32,34 @@ class DataAnalysis(Data):
             self.BoxPlot()
 
 
-    # Display all sorts of details on the dataframe to the user. 
+
+    ''' Streamlit function (constructor). The normal code that displays in the
+        terminal uses the other one to make use of variables. However with streamlit,
+        variables persist with session_state. ''' 
+    def __init__(self):
+        pass
+
+
+
+    # Streamlit function Display is overriding base class function in Data.py
     def Display(self):
+        # Get the dataframe through session state to carry out rest of function code.
+        df = st.session_state.df
+
         st.write('### [Data Analysis] Shows details on the dataframe, visualizations as well.')
 
         st.write('#### Dataframe: ')
-        st.write(self.m_df.head(8))
+        st.write(df.head(8))
 
         st.write("")
         st.write("")
         st.write('#### Smaller details:')
-        st.write(f'Dataframe shape (Rows/Columns): {self.m_df.shape}')
-        st.write(f'Unique classes: {self.m_df.diagnosis.unique()}')
+        st.write(f'Dataframe shape (Rows/Columns): {df.shape}')
+        st.write(f'Unique classes: {df.diagnosis.unique()}')
         st.write('Heatmap:')
 
         fig = plt.figure(figsize=(10, 10))
-        sns.heatmap(self.m_df.iloc[:, 1:9].corr(), annot=True)
+        sns.heatmap(df.iloc[:, 1:9].corr(), annot=True)
         st.pyplot(fig)
         
 
@@ -278,5 +290,3 @@ class DataAnalysis(Data):
     def BoxPlot(self):
         sns.boxplot(x='diagnosis', y='area_mean', data=self.m_df)
         plt.show()
-
-

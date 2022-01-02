@@ -13,6 +13,7 @@ Cancer Diagnosis
 #### Data Analysis, feature engineering, cleaning/validation and more are used to demonstrate data analysis on a cancer dataset.
 ''')
 
+# A list will be made of classes and 
 if 'listIndex' not in st.session_state:
     st.session_state.listIndex = 0
 
@@ -30,12 +31,16 @@ if 'df' not in st.session_state:
 # 1 - In all of data science, seeing the data clearly is necessary
 # and helps the engineers go on about the project. Since it shows
 # data, pass it the dataframe to work with.
+#
+#
+# From feature engineering and onward, ONLY use the updatedDf in session_state.
 if 'listOfClasses' not in st.session_state:
     # Each class will be in a list.
-    st.session_state.listOfClasses = [('data_analysis', DataAnalysis(st.session_state.df)),
-        ('data_cleaning_and_validation', DataCleaningAndValidation(st.session_state.df)),
-        ('feature_engineering', FeatureEngineering(st.session_state.df)),
-        ('model_training', ModelTraining(st.session_state.df))
+    st.session_state.listOfClasses = [('data_analysis', DataAnalysis()),
+        ('data_cleaning_and_validation', DataCleaningAndValidation()),
+        ('feature_engineering', FeatureEngineering()),
+        ('model_training', ModelTraining()),
+        ('evaluate_models', EvaluateModels())
         ]
 
 

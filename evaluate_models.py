@@ -2,6 +2,7 @@ from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.metrics import accuracy_score, roc_curve, roc_auc_score
 from sklearn.metrics import precision_score, recall_score, f1_score
 import matplotlib.pyplot as plt
+import streamlit as st
 
 ''' 
 
@@ -17,17 +18,38 @@ class EvaluateModels:
         self.m_xTest = xTest
         self.m_yTest = yTest
 
-    # Extra constructor for the streamlit flow of the program. 
+
+
+    ''' Streamlit function (constructor). The normal code that displays in the
+        terminal uses the other one to make use of variables. However with streamlit,
+        variables persist with session_state. ''' 
     def __init__(self):
         pass
 
 
 
     def Display(self):
-        pass
+        # Get model name, model, x & y test from the session state to make things easier.
+        modelName, model = st.session_state.chosenModel
+        xTest = st.session_state.xTest
+        yTest = st.session_state.yTest
+        st.write(f'xtest length: {len(xTest)}')
+        st.write(f'ytest length: {len(yTest)}')
+
+        st.write(f'#### [Evaluate Model] Begin getting metrics of the chosen {modelName} model')
+        st.write('')
+        st.write('')
+        st.write('')
+
+        st.write(f'##### {modelName} Metrics: ')
+        st.write(f'1) Accuracy: {round(accuracy_score(yTest, model.predict(xTest)), 3)}')
+        st.write(f'2) Precision: {round(precision_score(yTest, model.predict(xTest)), 3)}')
+        st.write(f'3) Recall: {round(recall_score(yTest, model.predict(xTest)), 3)}')
+        st.write(f'4) Auc score: {round(roc_auc_score(yTest, model.predict(xTest)), 3)}')
+        st.write(f'5) F1 score {round(f1_score(yTest, model.predict(xTest)), 3)}')
+        st.write(f'6) Classification report: {classification_report(yTest, model.predict(xTest))}')
+
     
-    def UpdateDataframe(self):
-        pass
 
 
 

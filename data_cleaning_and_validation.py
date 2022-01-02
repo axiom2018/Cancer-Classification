@@ -31,26 +31,27 @@ class DataCleaningAndValidation(Data):
         if showNullValues is True:
             print(self.m_df.isnull().sum()) 
 
-    
-    ''' After potentially changing the dataframe due to outlier removal,
-        it would be helpful to also show the dataframe details. This
-        function is for streamlit assistance. '''
-    def DataframeDetails(self, df):
-        st.write('### Dataframe details:')
-        st.write(f'Dataframe shape (Rows/Columns): {df.shape}')
-        st.write('Datframe: ')
-        st.write(self.m_df.head(10))
 
 
-    # Display all sorts of details on the dataframe to the user.
+    ''' Streamlit function (constructor). The normal code that displays in the
+        terminal uses the other one to make use of variables. However with streamlit,
+        variables persist with session_state. ''' 
+    def __init__(self):
+        pass
+
+
+    # Streamlit function Display is overriding base class function in Data.py
     def Display(self):
+        # Get the dataframe through session state to carry out rest of function code.
+        updatedDf = st.session_state.updatedDf
+        
         st.write('### [Data Cleaning and Validation] Cleaning the data is ALWAYS a big part of the job.')
         st.write('##### Outlier removal gets rid of extra data points that might not belong.')
 
         # Total column length is 32 for the record. No need for diagnosis nor id for now. 
         st.write('')
         st.write('')
-        columnName = st.selectbox("Select column to see its outliers:", (list(st.session_state.updatedDf.columns[2:])))
+        columnName = st.selectbox("Select column to see its outliers:", (list(updatedDf.columns[2:])))
 
         
         fig = plt.figure(figsize=(10, 6))
@@ -80,11 +81,11 @@ class DataCleaningAndValidation(Data):
             updatedDf - Declared in the  '''
         if 'dfCopy' not in st.session_state and self.m_checkBoxClicked is False:
             # st.write('1st if.')
-            sns.boxplot(x=columnName, data=st.session_state.updatedDf)
+            sns.boxplot(x=columnName, data=updatedDf)
             st.pyplot(fig)
 
             # Show details so user can see more regarding changes.
-            self.DataframeDetails(st.session_state.updatedDf)
+            self.DataframeDetails(updatedDf)
         
         elif 'dfCopy' not in st.session_state and self.m_checkBoxClicked is True:
             # st.write('2nd if.')
@@ -96,11 +97,14 @@ class DataCleaningAndValidation(Data):
 
         elif 'dfCopy' in st.session_state and self.m_checkBoxClicked is False:
             # st.write('3rd if.')
-            sns.boxplot(x=columnName, data=st.session_state.updatedDf)
+            sns.boxplot(x=columnName, data=updatedDf)
             st.pyplot(fig)
 
-            self.DataframeDetails(st.session_state.updatedDf)
+            self.DataframeDetails(updatedDf)
         
+        # 
+        # Problem here?
+        #
         elif 'dfCopy' in st.session_state and self.m_checkBoxClicked is True:
             # st.write('4th if')
             st.session_state.dfCopy = self.RemoveOutliers(columnName, False, True)
@@ -109,16 +113,21 @@ class DataCleaningAndValidation(Data):
     
             self.DataframeDetails(st.session_state.dfCopy)
 
-
-    ''' Only change the updated dataframe if the button was clicked. '''
+    # Streamlit function UpdateDataframe is overriding base class function in Data.py
     def UpdateDataframe(self):
         if self.m_checkBoxClicked is True:
-            st.session_state.updatedDf = st.session_state.dfCopy()
-            print('User decided to keep the changes made.')
+            st.session_state.updatedDf = st.session_state.dfCopy
+            print(f'User decided to keep the changes made. Df shape: {st.session_state.updatedDf.shape}')
         else:
-            print('User decided NOT to use/keep any outlier changes.')
+            print(f'User decided NOT to use/keep any outlier changes. Df shape: {st.session_state.updatedDf.shape}')
+    
 
-
+    # Helper function of the above streamlit overriden function Display.
+    def DataframeDetails(self, df):
+        st.write('### Dataframe details:')
+        st.write(f'Dataframe shape (Rows/Columns): {df.shape}')
+        st.write('Datframe: ')
+        st.write(df.head(10))
 
 
 
@@ -154,9 +163,19 @@ class DataCleaningAndValidation(Data):
         The IQR or inter-quartile range will be used to remove the outliers. Outliers
         are outliers because they are a distance away from the normal points, hence why
         calculating an upper and lower boundary are necessary. Box plot is used to visualize
-        the request to remove outliers from a particular feature/column.  '''
+        the request to remove outliers from a particular feature/column.
+
+        Due to the streamlit request, the proper dataframe must handled in this function.
+        There's one being used by streamlit that's saved in the session state, and of
+        course a different one passed into the first constructor of this class. Both
+        purposes need to be handled, hence the if statement at the beginning of this 
+        function.   '''
     def RemoveOutliers(self, columnName, describe=False, streamLitRequest=False):
-        frameCopy = self.m_df.copy()
+        frameCopy = None
+        if streamLitRequest is True:
+            frameCopy = st.session_state.updatedDf.copy()
+        else:
+            frameCopy = self.m_df.copy()
 
          # Check if the argument given is in fact a feature/column.
         if columnName not in frameCopy.columns.to_list():
