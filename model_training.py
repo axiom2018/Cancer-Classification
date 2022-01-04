@@ -1,4 +1,3 @@
-from numpy.core.fromnumeric import var
 import optuna
 from sklearn.model_selection import KFold, train_test_split, cross_val_score, cross_validate
 from sklearn.pipeline import make_pipeline
@@ -29,62 +28,57 @@ Splitting the dataframe up and building the model will be this classes responsib
 
 
 class ModelTraining(Data):
-    def __init__(self, df):
-        self.m_df = df
+    ''' Python only allows for 1 constructor unfortunately. So the extra "streamLitInit" default argument
+        means the class is being instantiated with the use of streamlit in mind. Streamlit uses session states
+        to manage variables so the usual "self" really isn't necessary. The functions that are on the class,
+        that will be called when the streamlit code in main.py is ran, are Display & UpdateDataframe. '''
+    def __init__(self, df, streamLitInit=False):
+        if streamLitInit is False:
+            self.m_df = df
 
-        ''' X - The features that can detect if a person has cancer or not.
-            y - The target/real values that confirm if a person has cancer or not. '''
-        self.m_X = self.m_df.iloc[:, 1:].values
-        self.m_y = self.m_df.iloc[:, 0].values
+            ''' X - The features that can detect if a person has cancer or not.
+                y - The target/real values that confirm if a person has cancer or not. '''
+            self.m_X = self.m_df.iloc[:, 1:].values
+            self.m_y = self.m_df.iloc[:, 0].values
 
-        # Simple list to hold all models. For use in TrainModels function.
-        self.m_models = []
-        
-        # This list of models is specifically for streamlit.
-        self.m_strModels = ['Logisitic Regression', 'Random Forest', 'Decision Tree', 'Svm', 'Naive Bayes']
+            # Simple list to hold all models. For use in TrainModels function.
+            self.m_models = []
+            
+            # This list of models is specifically for streamlit.
+            self.m_strModels = ['Logisitic Regression', 'Random Forest', 'Decision Tree', 'Svm', 'Naive Bayes']
 
-        self.m_x_train, self.m_x_test, self.m_y_train, self.m_y_test = train_test_split(self.m_X, 
-                    self.m_y, test_size=0.20, random_state=0)
+            self.m_x_train, self.m_x_test, self.m_y_train, self.m_y_test = train_test_split(self.m_X, 
+                        self.m_y, test_size=0.20, random_state=0)
+            
+        else:
+            ''' disable_default_handler() - No need for the flood of output Optuna produces 
+                in the terminal. Turn it back on with "optuna.logging.enable_default_handler()"
+            
+                m_modelSection - While testing the core functionality in the Display function, 
+                this boolean helps the functions not run repeatedly if this class was
+                last in line the 'listOfClasses' found in main.py. Was used primarily
+                for testing purposes to guarantee the code this boolean controls
+                wouldn't run multiple times.
+            
+                m_X/m_y, x/y_train & x/y_test - Set the necessary variables to be initialized here to 
+                default values but they'll be set when the Display function is called. The reason
+                for this is the dataframe will undergo changes during the course of the streamlit 
+                website being navigated by the user. For example in the dataframe to start, the 
+                diagnosis column/feature is categorical. But later on it's changed to numerical. 
+                So when the display function is called, variables like x_train will be properly set.  '''
+            self.m_modelSelection = False
+
+            self.m_X = None
+            self.m_y = None
+
+            self.m_x_train = None
+            self.m_x_test = None
+            self.m_y_train = None
+            self.m_y_test = None
 
         ''' No need for the flood of output Optuna produces in the terminal. 
             Turn it back on with "optuna.logging.enable_default_handler()" '''
         optuna.logging.disable_default_handler()
-
-
-
-    
-    ''' Streamlit function (constructor). The normal code that displays in the
-        terminal uses the other one to make use of variables. However with streamlit,
-        variables persist with session_state.
-        
-        
-        disable_default_handler() - No need for the flood of output Optuna produces 
-            in the terminal. Turn it back on with "optuna.logging.enable_default_handler()"
-            
-        m_modelSection - While testing the core functionality in the Display function, 
-            this boolean helps the functions not run repeatedly if this class was
-            last in line the 'listOfClasses' found in main.py. Was used primarily
-            for testing purposes to guarantee the code this boolean controls
-            wouldn't run multiple times.
-            
-        m_X/m_y, x/y_train & x/y_test - Set the necessary variables to be initialized here to 
-            default values but they'll be set when the Display function is called. The reason
-            for this is the dataframe will undergo changes during the course of the streamlit 
-            website being navigated by the user. For example in the dataframe to start, the 
-            diagnosis column/feature is categorical. But later on it's changed to numerical. 
-            So when the display function is called, variables like x_train will be properly set. ''' 
-    def __init__(self):        
-        optuna.logging.disable_default_handler()
-
-        self.m_modelSelection = False
-
-        self.m_X = None
-        self.m_y = None
-
-        self.m_x_train = None
-        self.m_x_test = None
-        self.m_y_train = None
-        self.m_y_test = None
 
 
 
@@ -121,7 +115,13 @@ class ModelTraining(Data):
             st.write('###### Press button below to begin model training after selection.')
 
             
-            if st.button('Train Model') is True:
+            # Placeholder for the button, it only needs 1 click.
+            place = st.empty()
+
+            if place.button('Train Model') is True:
+                # Once the button is pressed, it's of no more use. Get rid of it.
+                place.empty()
+
                 # Variable below will be assigned to the stream lit session state for use in evaluate model step.
                 model = None
 
@@ -157,9 +157,6 @@ class ModelTraining(Data):
             
                 self.m_modelSelection = True
     
-
-
-
 
 
     # Getters for other requesting classes.
@@ -283,7 +280,7 @@ class ModelTraining(Data):
         kernel = trial.suggest_categorical("kernel", {"rbf", "linear", "poly"})
 
         # Initialize the model, then get the score and accuracy.
-        svc = SVC(C=C, kernel=kernel)
+        svc = SVC(C=C, kernel=kernel, probability=True)
         svc.fit(self.m_x_train, self.m_y_train)
 
         score = cross_val_score(svc, self.m_X, self.m_y, n_jobs=1, cv=3)
@@ -305,7 +302,7 @@ class ModelTraining(Data):
 
     ''' All "apply" functions will be used to create study objects to 
         run the core algorithms themselves. '''
-    def ApplyLogisticRegression(self, showSteps, epochs=100):
+    def ApplyLogisticRegression(self, showSteps, epochs=50):
         if showSteps is True:
             print('Starting logistic regression optimization.')
 
@@ -335,7 +332,7 @@ class ModelTraining(Data):
 
         
 
-    def ApplyRandomForest(self, showSteps, epochs=100):
+    def ApplyRandomForest(self, showSteps, epochs=50):
         if showSteps is True:
             print('Starting random forest optimization.')
 
@@ -358,22 +355,23 @@ class ModelTraining(Data):
 
 
 
-    def ApplyDecisionTree(self, showSteps, epochs=100):
+    def ApplyDecisionTree(self, showSteps, epochs=50):
         if showSteps is True:
             print('Starting decision tree optimization.')
 
         study = optuna.create_study(direction='maximize')
         study.optimize(self.DecisionTree, n_trials=epochs)
 
+        if showSteps is True:
+            print('Post Optuna optimize function.')
+
         trial = study.best_trial
 
         criterion = trial.params["criterion"]
         splitter = trial.params["splitter"]
         max_depth = trial.params["max_depth"]
-        min_samples_split = trial.params["min_samples_split"]
 
-        dt = DecisionTreeClassifier(criterion=criterion, splitter=splitter, max_depth=max_depth,
-            min_samples_split=min_samples_split)
+        dt = DecisionTreeClassifier(criterion=criterion, splitter=splitter, max_depth=max_depth)
         
         dt.fit(self.m_X, self.m_y)
 
@@ -384,7 +382,7 @@ class ModelTraining(Data):
 
 
 
-    def ApplySVM(self, showSteps, epochs=100):
+    def ApplySVM(self, showSteps, epochs=20):
         if showSteps is True:
             print('Starting svm optimization.')
 
@@ -396,7 +394,7 @@ class ModelTraining(Data):
         C = trial.params["C"]
         kernel = trial.params["kernel"]
 
-        svc = SVC(C=C, kernel=kernel)
+        svc = SVC(C=C, kernel=kernel, probability=True)
         svc.fit(self.m_x_train, self.m_y_train)
 
         if showSteps is True:
@@ -406,7 +404,7 @@ class ModelTraining(Data):
 
 
 
-    def ApplyNaiveBayes(self, showSteps, epochs=100):
+    def ApplyNaiveBayes(self, showSteps, epochs=50):
         if showSteps is True:
             print('Starting naive bayes optimization.')
 
@@ -434,10 +432,11 @@ class ModelTraining(Data):
         if showSteps is True:
             print(f'---{nameOfCaller} model training beginning.---')
 
+
         self.m_models.append(('Logistic Regression', self.ApplyLogisticRegression(showSteps)))
         self.m_models.append(('Random Forest', self.ApplyRandomForest(showSteps, 50)))
         self.m_models.append(('Decision Tree', self.ApplyDecisionTree(showSteps)))
-        # self.m_models.append(('SVM', self.ApplySVM(showSteps, 20)))
+        self.m_models.append(('SVM', self.ApplySVM(showSteps, 20)))
         self.m_models.append(('Naive Bayes', self.ApplyNaiveBayes(showSteps)))
 
         if showSteps is True:
@@ -451,6 +450,7 @@ class ModelTraining(Data):
         Optuna must be ran. This function will run them all, get their trained models,
         and then use a voting classification to get the best model. '''
     def TrainModelsVotingClassifier(self, showSteps=False, streamlitRequest=False):
+        print('\n\n\nBeginning model training with Optuna, please wait.')
         self.CoreModelTraining('Voting Classifier', showSteps)
 
         # Initialize voting classifier and fit on x/y train data
@@ -466,7 +466,7 @@ class ModelTraining(Data):
                 
             Then print out the test scores. '''
         kf = KFold(shuffle=True, random_state=11)
-        scores = cross_validate(vc, X=self.m_x_train, y=self.m_y_train, cv=kf)
+        scores = cross_validate(vc, X=self.m_x_train, y=self.m_y_train, cv=2)
         testScores = scores['test_score']
 
         if streamlitRequest is False:

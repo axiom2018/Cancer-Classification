@@ -15,31 +15,22 @@ Feature engineering is an extra few steps that can increase the overall model pe
 '''
 
 class FeatureEngineering(Data):
-    def __init__(self, df):
-        self.m_df = df
+    ''' Python only allows for 1 constructor unfortunately. So the extra "streamLitInit" default argument
+        means the class is being instantiated with the use of streamlit in mind. Streamlit uses session states
+        to manage variables so the usual "self" really isn't necessary. The functions that are on the class,
+        that will be called when the streamlit code in main.py is ran, are Display & UpdateDataframe. '''
+    def __init__(self, df, streamLitInit=False):
+        if streamLitInit is False:
+            self.m_df = df
 
-        # A part of feature engineering is getting rid of columns/features. The id column is useless.
-        self.m_df.drop('id', axis=1, inplace=True)
-        st.session_state.updatedDf.drop('id', axis=1, inplace=True)
+            # The id column/feature isn't really necessary at all so getting rid of it is good.
+            self.m_df.drop('id', axis=1, inplace=True)
+        else:
+            ''' While testing the core functionality in the Display function, this boolean helps the functions 
+                not run repeatedly if this class was last in line the 'listOfClasses' found in main.py. Was used 
+                primarily for testing purposes to guarantee the code this boolean controls wouldn't run multiple times. '''
+            self.m_stEncodeAndCorrelationDone = False
 
-        ''' While testing the core functionality in the Display function, this
-            boolean helps the functions not run repeatedly if this class was
-            last in line the 'listOfClasses' found in main.py. Was used primarily
-            for testing purposes to guarantee the code this boolean controls
-            wouldn't run multiple times. '''
-        self.m_stEncodeAndCorrelationDone = False
-
-
-
-    ''' Streamlit function (constructor). The normal code that displays in the
-        terminal uses the other one to make use of variables. However with streamlit,
-        variables persist with session_state. ''' 
-    def __init__(self):
-        # Add boolean for encode and correlation so they don't repeatedly happen in the display function.
-        self.m_stEncodeAndCorrelationDone = False
-
-        # if 'encodedAndCorrelationBool' not in st.session_state:
-        #     st.session_state.encodedAndCorrelationBool = False
 
 
     # Streamlit function Display is overriding base class function in Data.py
@@ -69,14 +60,12 @@ class FeatureEngineering(Data):
         st.write('')
         st.write('##### Remove features that have high VIF (Variance Inflation factor) which is which features are highly correlated with the data.')
 
-        # if st.session_state.encodedAndCorrelationBool is False:
         if self.m_stEncodeAndCorrelationDone is False:
             self.LabelEncoding(False, True)
             self.Correlation(2, False, False, True)
-            st.session_state.encodedAndCorrelationBool = True
+            self.m_stEncodeAndCorrelationDone = True
 
 
-    
 
     ''' Percentile scoring is simple so here's an example with a dataset:
 
@@ -290,8 +279,6 @@ class FeatureEngineering(Data):
 
 
 
-
-
     # Label encoding is solely for categorical variables of course.
     def LabelEncoding(self, showSteps=False, streamLitRequest=False):
         le = LabelEncoder()
@@ -431,9 +418,7 @@ class FeatureEngineering(Data):
             else:
                 col1 = st.session_state.updatedDf['diagnosis']
                 col2 = st.session_state.updatedDf[column]
-            
-            # col1 = self.m_df['diagnosis']
-            # col2 = self.m_df[column]
+
             corrValue = round(col1.corr(col2), 5)
 
             if showSteps is True:

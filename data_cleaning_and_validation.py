@@ -17,27 +17,15 @@ are what make up data cleaning and validation.
 '''
 
 class DataCleaningAndValidation(Data):
-    def __init__(self, df, showColumnNames=False, showNullValues=False):
-        self.m_df = df
-        self.m_checkBoxClicked = False
+    ''' Python only allows for 1 constructor unfortunately. So the extra "streamLitInit" default argument
+        means the class is being instantiated with the use of streamlit in mind. Streamlit uses session states
+        to manage variables so the usual "self" really isn't necessary. The functions that are on the class,
+        that will be called when the streamlit code in main.py is ran, are Display & UpdateDataframe. '''
+    def __init__(self, df, streamLitInit=False):
+        if streamLitInit is False:
+            self.m_df = df
+            self.m_checkBoxClicked = False
 
-        ''' The user being able to visually see the column names will be a help
-            to them with this class interface. '''
-        if showColumnNames is True:
-            print(self.m_df.columns)
-
-        ''' Show any empty or null/missing values. Can also be done with dataframeObject.isna().any() which
-            returns booleans if null values exist for a feature/column. '''
-        if showNullValues is True:
-            print(self.m_df.isnull().sum()) 
-
-
-
-    ''' Streamlit function (constructor). The normal code that displays in the
-        terminal uses the other one to make use of variables. However with streamlit,
-        variables persist with session_state. ''' 
-    def __init__(self):
-        pass
 
 
     # Streamlit function Display is overriding base class function in Data.py
@@ -61,10 +49,8 @@ class DataCleaningAndValidation(Data):
             if statements below. '''
         if st.checkbox('Remove outliers (If desired, it not, leave unchecked & click next)'):
             self.m_checkBoxClicked = True
-            # st.write('Boolean is true.')
         else:
             self.m_checkBoxClicked = False
-            # st.write('Boolean is false.')
 
 
         ''' Since removing outliers can be a bit dangerous, it's definitely needed
@@ -78,9 +64,9 @@ class DataCleaningAndValidation(Data):
             DataframeDetails - This will show some changes in the dataframe
                 IF the user decided to removal outliers.
             
-            updatedDf - Declared in the  '''
+            updatedDf - If outliers are removed and the user decides to carry
+                on with them, this dataframe will hold those changes.  '''
         if 'dfCopy' not in st.session_state and self.m_checkBoxClicked is False:
-            # st.write('1st if.')
             sns.boxplot(x=columnName, data=updatedDf)
             st.pyplot(fig)
 
@@ -88,7 +74,6 @@ class DataCleaningAndValidation(Data):
             self.DataframeDetails(updatedDf)
         
         elif 'dfCopy' not in st.session_state and self.m_checkBoxClicked is True:
-            # st.write('2nd if.')
             st.session_state.dfCopy = self.RemoveOutliers(columnName, False, True)
             sns.boxplot(x=columnName, data=st.session_state.dfCopy)
             st.pyplot(fig)
@@ -96,17 +81,12 @@ class DataCleaningAndValidation(Data):
             self.DataframeDetails(st.session_state.dfCopy)
 
         elif 'dfCopy' in st.session_state and self.m_checkBoxClicked is False:
-            # st.write('3rd if.')
             sns.boxplot(x=columnName, data=updatedDf)
             st.pyplot(fig)
 
             self.DataframeDetails(updatedDf)
         
-        # 
-        # Problem here?
-        #
         elif 'dfCopy' in st.session_state and self.m_checkBoxClicked is True:
-            # st.write('4th if')
             st.session_state.dfCopy = self.RemoveOutliers(columnName, False, True)
             sns.boxplot(x=columnName, data=st.session_state.dfCopy)
             st.pyplot(fig)
@@ -231,7 +211,6 @@ class DataCleaningAndValidation(Data):
         # Now remove the outliers from a dataframe copy.
         outlierIndexes = sorted(set(outlierIndexes))
         
-        # dfCopy = self.m_df.copy()
         frameCopy = frameCopy.drop(outlierIndexes)
 
         if streamLitRequest is False:
