@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
+from pandas.core import frame
 import seaborn as sns
 import pandas as pd
 import numpy as np
 import scipy as sp
-
+import streamlit as st
+from data import Data
 
 ''' 
 
@@ -14,21 +16,100 @@ are what make up data cleaning and validation.
 
 '''
 
-class DataCleaningAndValidation:
-    def __init__(self, df, showColumnNames=False, showNullValues=False):
-        self.m_df = df
+class DataCleaningAndValidation(Data):
+    ''' Python only allows for 1 constructor unfortunately. So the extra "streamLitInit" default argument
+        means the class is being instantiated with the use of streamlit in mind. Streamlit uses session states
+        to manage variables so the usual "self" really isn't necessary. The functions that are on the class,
+        that will be called when the streamlit code in main.py is ran, are Display & UpdateDataframe. '''
+    def __init__(self, df, streamLitInit=False):
+        if streamLitInit is False:
+            self.m_df = df
+            self.m_checkBoxClicked = False
 
-        ''' The user being able to visually see the column names will be a help
-            to them with this class interface. '''
-        if showColumnNames is True:
-            print(self.m_df.columns)
 
-        ''' Show any empty or null/missing values. Can also be done with dataframeObject.isna().any() which
-            returns booleans if null values exist for a feature/column. '''
-        if showNullValues is True:
-            print(self.m_df.isnull().sum())
 
+    # Streamlit function Display is overriding base class function in Data.py
+    def Display(self):
+        # Get the dataframe through session state to carry out rest of function code.
+        updatedDf = st.session_state.updatedDf
+        
+        st.write('### [Data Cleaning and Validation] Cleaning the data is ALWAYS a big part of the job.')
+        st.write('##### Outlier removal gets rid of extra data points that might not belong.')
+
+        # Total column length is 32 for the record. No need for diagnosis nor id for now. 
+        st.write('')
+        st.write('')
+        columnName = st.selectbox("Select column to see its outliers:", (list(updatedDf.columns[2:])))
+
+        
+        fig = plt.figure(figsize=(10, 6))
+
+
+        ''' The boolean value will help controlling what's displayed, especially for the
+            if statements below. '''
+        if st.checkbox('Remove outliers (If desired, it not, leave unchecked & click next)'):
+            self.m_checkBoxClicked = True
+        else:
+            self.m_checkBoxClicked = False
+
+
+        ''' Since removing outliers can be a bit dangerous, it's definitely needed
+            to do the operations in a copy first. Even if a copy IS made, if the
+            checkBoxClicked boolean isn't true, the changes won't be shown of course.
+            
+            boxplot - Definitely use box plots to show the outliers.
+            
+            st.pyplot - Shows the above boxplot.
+            
+            DataframeDetails - This will show some changes in the dataframe
+                IF the user decided to removal outliers.
+            
+            updatedDf - If outliers are removed and the user decides to carry
+                on with them, this dataframe will hold those changes.  '''
+        if 'dfCopy' not in st.session_state and self.m_checkBoxClicked is False:
+            sns.boxplot(x=columnName, data=updatedDf)
+            st.pyplot(fig)
+
+            # Show details so user can see more regarding changes.
+            self.DataframeDetails(updatedDf)
+        
+        elif 'dfCopy' not in st.session_state and self.m_checkBoxClicked is True:
+            st.session_state.dfCopy = self.RemoveOutliers(columnName, False, True)
+            sns.boxplot(x=columnName, data=st.session_state.dfCopy)
+            st.pyplot(fig)
     
+            self.DataframeDetails(st.session_state.dfCopy)
+
+        elif 'dfCopy' in st.session_state and self.m_checkBoxClicked is False:
+            sns.boxplot(x=columnName, data=updatedDf)
+            st.pyplot(fig)
+
+            self.DataframeDetails(updatedDf)
+        
+        elif 'dfCopy' in st.session_state and self.m_checkBoxClicked is True:
+            st.session_state.dfCopy = self.RemoveOutliers(columnName, False, True)
+            sns.boxplot(x=columnName, data=st.session_state.dfCopy)
+            st.pyplot(fig)
+    
+            self.DataframeDetails(st.session_state.dfCopy)
+
+    # Streamlit function UpdateDataframe is overriding base class function in Data.py
+    def UpdateDataframe(self):
+        if self.m_checkBoxClicked is True:
+            st.session_state.updatedDf = st.session_state.dfCopy
+            print(f'User decided to keep the changes made. Df shape: {st.session_state.updatedDf.shape}')
+        else:
+            print(f'User decided NOT to use/keep any outlier changes. Df shape: {st.session_state.updatedDf.shape}')
+    
+
+    # Helper function of the above streamlit overriden function Display.
+    def DataframeDetails(self, df):
+        st.write('### Dataframe details:')
+        st.write(f'Dataframe shape (Rows/Columns): {df.shape}')
+        st.write('Datframe: ')
+        st.write(df.head(10))
+
+
 
     ''' Outliers are just those bits of data that are more unique, that stray away from
         the bulk. They can definitely have some effect on the model. 
@@ -62,24 +143,40 @@ class DataCleaningAndValidation:
         The IQR or inter-quartile range will be used to remove the outliers. Outliers
         are outliers because they are a distance away from the normal points, hence why
         calculating an upper and lower boundary are necessary. Box plot is used to visualize
-        the request to remove outliers from a particular feature/column.  '''
-    def RemoveOutliers(self, columnName, describe=False):
+        the request to remove outliers from a particular feature/column.
+
+        Due to the streamlit request, the proper dataframe must handled in this function.
+        There's one being used by streamlit that's saved in the session state, and of
+        course a different one passed into the first constructor of this class. Both
+        purposes need to be handled, hence the if statement at the beginning of this 
+        function.   '''
+    def RemoveOutliers(self, columnName, describe=False, streamLitRequest=False):
+        frameCopy = None
+        if streamLitRequest is True:
+            frameCopy = st.session_state.updatedDf.copy()
+        else:
+            frameCopy = self.m_df.copy()
+
          # Check if the argument given is in fact a feature/column.
-        if columnName not in self.m_df.columns.to_list():
+        if columnName not in frameCopy.columns.to_list():
             print('Bad column name given, returning.')
             return
 
-        print(f'Currently working with column {columnName}.')
+        if streamLitRequest is False:
+            print(f'Currently working with column {columnName}.')
 
         # Show stats since some of its output will be used for calculations.
         if describe is True:
-            print(self.m_df.describe())
+            print(frameCopy.describe())
 
 
-        # Of course plot, a picture is a thousand words.
-        self.m_df.boxplot(column=[columnName])
-        plt.grid(False)
-        plt.show()
+        ''' Of course plot, a picture is a thousand words. Also, streamlit has a problem with
+            matplotlib figures being run while streamlit itself is running. That's why the 2nd
+            optional parameter exists. '''
+        if streamLitRequest is False:
+            frameCopy.boxplot(column=[columnName])
+            plt.grid(False)
+            plt.show()
 
 
         ''' Important values to be calculated.
@@ -94,8 +191,8 @@ class DataCleaningAndValidation:
             to deal with. Specifying the values are basically thresholds, meaning changing
             the values will change the results of the overall process this function tries
             to do. '''
-        q1 = self.m_df[columnName].quantile(0.25)
-        q3 = self.m_df[columnName].quantile(0.75)
+        q1 = frameCopy[columnName].quantile(0.25)
+        q3 = frameCopy[columnName].quantile(0.75)
         iqr = q3 - q1
 
         ''' Calculate lower and upper boundaries. A normal formula will look like this:
@@ -109,21 +206,19 @@ class DataCleaningAndValidation:
             2) (self.m_df[columnName] > upperBound) - Any # greater than the upper bound.
             
             Doing both ensures us that outliers on opposite sides are found. '''
-        outlierIndexes = self.m_df.index[(self.m_df[columnName] < lowerBound) | (self.m_df[columnName] > upperBound)]
+        outlierIndexes = frameCopy.index[(frameCopy[columnName] < lowerBound) | (frameCopy[columnName] > upperBound)]
 
         # Now remove the outliers from a dataframe copy.
         outlierIndexes = sorted(set(outlierIndexes))
         
-        dfCopy = self.m_df.copy()
-        dfCopy = dfCopy.drop(outlierIndexes)
+        frameCopy = frameCopy.drop(outlierIndexes)
 
-        # Of course plot, a picture is a thousand words.
-        dfCopy.boxplot(column=[columnName])
-        plt.grid(False)
-        plt.show()
+        if streamLitRequest is False:
+            frameCopy.boxplot(column=[columnName])
+            plt.grid(False)
+            plt.show()
 
-
-
+        return frameCopy
 
 
 

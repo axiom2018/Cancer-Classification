@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import stats
+import streamlit as st
+from data import Data
 
 ''' 
 
@@ -13,22 +15,38 @@ This class is for showing information about the dataset being used and possibly 
 
 '''
 
-class DataAnalysis:
-    ''' Default arguments will show certain things based on provided arguments during class object creation. 
-        This allows the user to see what they would like and not even have to manually call the function
-        themselves. '''
-    def __init__(self, df, showDataDetails=False, showCountPlot=False, showBoxPlot=False):
-        self.m_df = df
+class DataAnalysis(Data):
+    ''' Python only allows for 1 constructor unfortunately. So the extra "streamLitInit" default argument
+        means the class is being instantiated with the use of streamlit in mind. Streamlit uses session states
+        to manage variables so the usual "self" really isn't necessary. The functions that are on the class,
+        that will be called when the streamlit code in main.py is ran, are Display & UpdateDataframe. '''
+    def __init__(self, df, streamLitInit=False):
+        if streamLitInit is False:
+            self.m_df = df
 
-        if showDataDetails is True:
-            self.ShowDataFrameDetails()
 
-        if showCountPlot is True:
-            self.CountPlot()
 
-        if showBoxPlot is True:
-            self.BoxPlot()
+    # Streamlit function Display is overriding base class function in Data.py
+    def Display(self):
+        # Get the dataframe through session state to carry out rest of function code.
+        df = st.session_state.df
 
+        st.write('### [Data Analysis] Shows details on the dataframe, visualizations as well.')
+
+        st.write('#### Dataframe: ')
+        st.write(df.head(8))
+
+        st.write("")
+        st.write("")
+        st.write('#### Smaller details:')
+        st.write(f'Dataframe shape (Rows/Columns): {df.shape}')
+        st.write(f'Unique classes: {df.diagnosis.unique()}')
+        st.write('Heatmap:')
+
+        fig = plt.figure(figsize=(10, 10))
+        sns.heatmap(df.iloc[:, 1:9].corr(), annot=True)
+        st.pyplot(fig)
+        
 
 
     def ShowDataFrameDetails(self):
@@ -36,10 +54,13 @@ class DataAnalysis:
         print(f'---Head---:\n{self.m_df.head()}\n')
 
         # .shape gives # of rows and columns in the dataframe.
-        print(f'---Shape---: {self.m_df.shape}\n')
+        print(f'---Shape---:\n{self.m_df.shape}\n')
 
         # View all column names dataset has.
-        print(f'---Column names---: {self.m_df.columns}\n')
+        print(f'---Column names---:\n{self.m_df.columns}\n')
+
+        # Any null values?
+        print(f'---Null values (IF any)---:\n{self.m_df.isnull().sum()}') 
 
         ''' See the types of data, but more importantly see any missing values from 
             the total amount of rows in every column. Very important to see because
@@ -67,7 +88,7 @@ class DataAnalysis:
             o
         u - mean of the feature values
         o - standard deviation of the feature values. '''
-    def ViolinPlot(self, plotCertainAmountOfFeatures=False, amountOfFeaturesToPlot=0):
+    def ViolinPlot(self):
         # Some columns aren't needed for this purpose so get rid of them.
         editedFeatures = self.m_df.drop(['id', 'diagnosis'], axis=1)
 
@@ -99,6 +120,40 @@ class DataAnalysis:
         plt.figure(figsize=(11, 7))
         sns.violinplot(x='value', y='features', hue='diagnosis', data=newDataSet, split=True,
             inner='quart', palette='Set1')
+        plt.show()
+
+
+
+    def HeatMap(self):
+        plt.figure(figsize=(10, 10))
+        matrix = sns.heatmap(self.m_df.iloc[:, 1:9].corr(), annot=True)
+        plt.show()
+
+
+
+    ''' View how many types of the target variables there are in graph using seaborn. 
+        Also terminal to view it later after user exists graph. '''
+    def CountPlot(self):
+        valueCounts = self.m_df['diagnosis'].value_counts()
+        print(f'---value_counts of target variable---:\n{valueCounts}')
+        sns.countplot(self.m_df['diagnosis'])
+        plt.show()
+
+
+
+    ''' Box plots are a bit useful. They demonstrate the distribution of data. Using a
+        minimum, q1 (quartile), median, q3, and maximum, the box plot has the ability
+        to tell us about outliers. If outliers will be significant in the project, this
+        will help identify them. Also determines if the data is symmetrical of not as an
+        imbalance could be important to see.
+        
+        Ex: The outliers will be displayed by little diamonds in the boxplot in the
+            function. For M, the top or highest outlier will be 2501. Seeing the max
+            value in the area_mean feature/column, we can confirm this with the code:
+            "print('Max value is ' + str(np.amax(self.m_df['area_mean'].values)))". The
+            result matches the afforementioned outlier. '''
+    def BoxPlot(self):
+        sns.boxplot(x='diagnosis', y='area_mean', data=self.m_df)
         plt.show()
 
 
@@ -156,6 +211,7 @@ class DataAnalysis:
         plt.show()
 
 
+
     ''' Correlation is for finding out a relationship (be it positive, negative, or neutral)
         between 2 variables. This is definitely used in the world of business to see if one
         thing influences another in any manner at all. A quick example might be if a company
@@ -172,7 +228,7 @@ class DataAnalysis:
             pick out ones according TO the threshold for real side by side comparison. 
             
         seeCorrelationHeatMap - Self explanatory. '''
-    def Correlation(self, threshold=0.5, seeCurrentColumnRows=False, seeCorrelationHeatMap=False):
+    def Correlation(self, threshold=0.5, seeCurrentColumnRows=False, seeHeatMap=False):
         # Only use a few columns for the correlation.
         corrMatrix = self.m_df.iloc[:, 1:9].corr()
 
@@ -221,40 +277,5 @@ class DataAnalysis:
             print('\n')
 
 
-        if seeCorrelationHeatMap is True:
+        if seeHeatMap is True:
             self.HeatMap()
-
-
-    def HeatMap(self):
-        plt.figure(figsize=(10, 10))
-        matrix = sns.heatmap(self.m_df.iloc[:, 1:9].corr(), annot=True)
-        plt.show()
-
-
-
-    ''' View how many types of the target variables there are in graph using seaborn. 
-        Also terminal to view it later after user exists graph. '''
-    def CountPlot(self):
-        valueCounts = self.m_df['diagnosis'].value_counts()
-        print(f'---value_counts of target variable---:\n{valueCounts}')
-        sns.countplot(self.m_df['diagnosis'])
-        plt.show()
-
-
-
-    ''' Box plots are a bit useful. They demonstrate the distribution of data. Using a
-        minimum, q1 (quartile), median, q3, and maximum, the box plot has the ability
-        to tell us about outliers. If outliers will be significant in the project, this
-        will help identify them. Also determines if the data is symmetrical of not as an
-        imbalance could be important to see.
-        
-        Ex: The outliers will be displayed by little diamonds in the boxplot in the
-            function. For M, the top or highest outlier will be 2501. Seeing the max
-            value in the area_mean feature/column, we can confirm this with the code:
-            "print('Max value is ' + str(np.amax(self.m_df['area_mean'].values)))". The
-            result matches the afforementioned outlier. '''
-    def BoxPlot(self):
-        sns.boxplot(x='diagnosis', y='area_mean', data=self.m_df)
-        plt.show()
-
-

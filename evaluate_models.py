@@ -2,6 +2,7 @@ from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.metrics import accuracy_score, roc_curve, roc_auc_score
 from sklearn.metrics import precision_score, recall_score, f1_score
 import matplotlib.pyplot as plt
+import streamlit as st
 
 ''' 
 
@@ -12,10 +13,69 @@ View accuracy, confusion matrices, and those sorts of things.
 '''
 
 class EvaluateModels:
-    def __init__(self, models, xTest, yTest):
-        self.m_models = models
-        self.m_xTest = xTest
-        self.m_yTest = yTest
+    ''' Python only allows for 1 constructor unfortunately. So the extra "streamLitInit" default argument
+        means the class is being instantiated with the use of streamlit in mind. Streamlit uses session states
+        to manage variables so the usual "self" really isn't necessary. The functions that are on the class,
+        that will be called when the streamlit code in main.py is ran, are Display & UpdateDataframe. '''
+    def __init__(self, models, xTest, yTest, streamLitInit=False):
+        if streamLitInit is False:
+            self.m_models = models
+            self.m_xTest = xTest
+            self.m_yTest = yTest 
+
+
+
+    # Streamlit function Display is overriding base class function in Data.py
+    def Display(self):
+        # Get model name, model, x & y test from the session state to make things easier.
+        modelName, model = st.session_state.chosenModel
+        xTest = st.session_state.xTest
+        yTest = st.session_state.yTest
+
+        st.write(f'#### [Evaluate Model] Begin getting metrics of the chosen {modelName} model')
+        st.write('')
+        st.write('')
+        st.write('')
+
+        st.write(f'##### {modelName} Metrics: ')
+        st.write(f'1) Accuracy: {round(accuracy_score(yTest, model.predict(xTest)), 3)}')
+        st.write(f'2) Precision: {round(precision_score(yTest, model.predict(xTest)), 3)}')
+        st.write(f'3) Recall: {round(recall_score(yTest, model.predict(xTest)), 3)}')
+        st.write(f'4) Auc score: {round(roc_auc_score(yTest, model.predict(xTest)), 3)}')
+        st.write(f'5) F1 score {round(f1_score(yTest, model.predict(xTest)), 3)}')
+        st.write(f'6) Classification report: {classification_report(yTest, model.predict(xTest))}')
+
+        # Create roc curve for the model.
+        self.StreamlitRocCurveCreation(model, modelName, xTest, yTest)
+    
+
+
+    # Streamlit helper function
+    def StreamlitRocCurveCreation(self, model, modelName, xtest, ytest):
+        # Get probability and use it to get the auc score.
+        probability = model.predict_proba(xtest)[:, 1]
+        auc_score = roc_auc_score(ytest, probability)
+
+        ''' Fp and tp will be used on the x and y axis. Threshold is important
+            because it can definitely change curves. '''
+        fp, tp, threshold = roc_curve(ytest, probability)
+
+
+        fig = plt.figure(figsize=(10, 10))
+        st.write('')
+        st.write('')
+        st.write('')
+        st.write('')
+        st.write(f'##### Roc curve plot: ')
+
+        # Detailed string redy for the plot.
+        plotLabel = f'{model} (AUROC = %0.3f)' % auc_score
+        plt.plot(fp, tp, linestyle='--', label=plotLabel)
+        plt.title(f'{modelName} roc plot.')
+        plt.xlabel('False positive')
+        plt.ylabel('True positive')
+
+        st.pyplot(fig)
 
 
 
@@ -45,8 +105,7 @@ class EvaluateModels:
                     bestAccuracyModel = (model[0], accScore)
 
         return bestAccuracyModel
-
-
+        
 
 
     ''' What is precision? 
@@ -109,7 +168,6 @@ class EvaluateModels:
     
             
             
-
     ''' What is roc_auc_score? 
 
             It's a way to calculate the auc (area under the roc curve) GIVEN a roc curve. 
@@ -324,6 +382,7 @@ class EvaluateModels:
         plt.legend()
         plt.show()
 
+
     
     ''' Helper function whose primary job is to decide which, out of all the matrices,
         has the lowest value. The BestModel function will be using this.
@@ -385,7 +444,6 @@ class EvaluateModels:
         
         if showSteps is True:
             print(f'\n--Best model (based on {metric}) - Name: {bestModel[0]}. {metric} rate: {bestModel[1]} ')
-
 
 
 
